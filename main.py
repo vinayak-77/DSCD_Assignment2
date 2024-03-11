@@ -21,9 +21,9 @@ def resvote():
 def run():
     n=int(input("Enter Node ID : "))
     try:
-        os.mkdir(f"{n}", 0o777)
+        os.mkdir(f"logs_node_{n}.txt", 0o777)
         path = os.getcwd()+f"/{n}/"
-        f = open(path+f"logs_node_{n}.txt","a+")
+        f = open(path+f"logs.txt","a+")
         f1= open(path+"metadata.txt","a+")
         f2= open(path+"dump.txt","a+")
         if leader:
