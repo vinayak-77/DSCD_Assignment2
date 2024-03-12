@@ -13,6 +13,8 @@ other_nodes = ['localhost:50051','localhost:50052']
 leader = False
 
 
+
+
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
     # if port=="50051":
