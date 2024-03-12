@@ -1,8 +1,33 @@
+import random
+
 import grpc
 from concurrent import futures
 import time
 import raft_pb2,raft_pb2_grpc
 import os
+
+other_nodes = []
+leader = False
+
+
+def timeout():
+    time_rand = time.time()+random.uniform(1, 2)
+    while True:
+        if time.time() == time_rand:
+            StartElection()
+
+def StartElection():
+    votes = 0
+    for i in other_nodes:
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = raft_pb2_grpc.RaftStub(channel)
+            request = raft_pb2.RequestVotesArgs()
+            response = stub.RequestVote(request)
+            if(response.voteGranted == True):
+                votes+=1
+    if(votes>=len(other_nodes)/2):
+        leader=True
+
 
 
 class RaftServicer(raft_pb2_grpc.RaftServicer):
@@ -17,8 +42,9 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
   def ServeClient(self, request, context):
     print(request.request)
     # return super().ServeClient(request, context)
-    
-leader = False
+
+
+
 def serve():
   server = grpc.server(futures.ThreadPoolExecutor(max_workers=1000))
   raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(),server)
@@ -26,6 +52,7 @@ def serve():
   server.start()
   n=int(input("Enter Node ID : "))
   try:
+
       os.mkdir(f"logs_node_{n}", 0o777)
       path = os.getcwd()+f"/logs_node_{n}/"
       f = open(path+f"logs.txt","a+")
