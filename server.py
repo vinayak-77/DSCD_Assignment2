@@ -17,6 +17,7 @@ def timeout():
             StartElection()
 
 def StartElection():
+    global leader
     votes = 0
     for i in other_nodes:
         with grpc.insecure_channel('localhost:50051') as channel:
