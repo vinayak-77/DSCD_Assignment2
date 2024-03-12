@@ -1,3 +1,4 @@
+import concurrent
 import random
 import sys
 import threading
@@ -8,12 +9,16 @@ import time
 import raft_pb2, raft_pb2_grpc
 import os
 port = sys.argv[1]
-other_nodes = ['localhost:50052']
+other_nodes = ['localhost:50051','localhost:50052']
 leader = False
 
 
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
+    # if port=="50051":
+    #     time_rand+=5
+    # else :
+    #     time_rand+=8
 
     while True:
         if time.time() >= time_rand and not leader:
@@ -27,7 +32,12 @@ def StartElection():
     global leader
     votes = 0
     for i in other_nodes:
+
         with grpc.insecure_channel(i) as channel:
+
+            k=i.split(":")
+            if k[1]==port:
+                continue
             stub = raft_pb2_grpc.RaftStub(channel)
 
             request = raft_pb2.RequestVotesArgs(term=1,candidateId=other_nodes.index(i),lastLogTerm=0,lastLogIndex=0)
@@ -45,8 +55,11 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         # return super().AppendEntries(request, context)
 
     def RequestVote(self, request, context):
+        vote=True
+        if leader==True:
+            vote=False
 
-        return raft_pb2.RequestVotesRes(term=1,voteGranted=True,longestDurationRem=0)
+        return raft_pb2.RequestVotesRes(term=1,voteGranted=vote,longestDurationRem=0)
         # return super().RequestVote(request, context)
 
     def ServeClient(self, request, context):
@@ -55,7 +68,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1000))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
@@ -83,14 +96,20 @@ def serve():
     except KeyboardInterrupt:
         server.stop(0)
 
-
+t=[]
 if __name__ == '__main__':
 
-    if port =="50051":
-        th = threading.Thread(target=timeout)
-        try:
-            th.start()
-        except KeyboardInterrupt:
-            th.join()
-    else:
-        serve()
+    th1 = threading.Thread(target=serve)
+    th2 = threading.Thread(target=timeout)
+    t.append(th1)
+    t.append(th2)
+    try:
+        for i in t:
+            i.start()
+        for i in t:
+            i.join()
+
+    except:
+        sys.exit(0)
+
+
