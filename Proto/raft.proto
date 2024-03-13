@@ -36,9 +36,11 @@ message RequestVotesArgs{
 }
 
 message RequestVotesRes{
+
   int32 term = 1;
   bool voteGranted = 2;
   int32 longestDurationRem = 3;
+  int32 NodeId=4;
 }
 
 message ServeClientArgs {

@@ -1,5 +1,6 @@
 import concurrent
 import random
+import socket
 import sys
 import threading
 
@@ -8,7 +9,9 @@ from concurrent import futures
 import time
 import raft_pb2, raft_pb2_grpc
 import os
+from raftNode import Node
 port = sys.argv[1]
+ip = socket.gethostbyname(socket.gethostname())
 other_nodes = ['localhost:50051','localhost:50052']
 leader = False
 
@@ -17,10 +20,6 @@ leader = False
 
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
-    # if port=="50051":
-    #     time_rand+=5
-    # else :
-    #     time_rand+=8
 
     while True:
         if time.time() >= time_rand and not leader:
@@ -29,27 +28,24 @@ def timeout():
                 print("Leader")
 
 
-def StartElection():
+def StartElection(Node):
 
-    global leader
     votes = 0
     for i in other_nodes:
-
+        if i==Node.ipAddr+Node.port:
+            continue
         with grpc.insecure_channel(i) as channel:
-
-            k=i.split(":")
-            if k[1]==port:
-                continue
             stub = raft_pb2_grpc.RaftStub(channel)
-
             request = raft_pb2.RequestVotesArgs(term=1,candidateId=other_nodes.index(i),lastLogTerm=0,lastLogIndex=0)
-
             response = stub.RequestVote(request)
             if (response.voteGranted == True):
-                votes += 1
-    if (votes >= len(other_nodes) / 2):
-        leader = True
+                Node.votesReceived.append(response.NodeId)
 
+    if (len(Node.votesReceived) >= len(other_nodes) / 2):
+        Node.currentRole = "Leader"
+
+def SuspectFail():
+    pass
 
 class RaftServicer(raft_pb2_grpc.RaftServicer):
     def AppendEntries(self, request, context):
@@ -75,20 +71,37 @@ def serve():
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     n = int(input("Enter Node ID : "))
+    node = None
     try:
+        if(os.path.isdir(f"logs_node_{n}")):
+            #take data from log files
+            path = os.getcwd() + f"/logs_node_{n}/"
+            f = open(path + f"logs.txt", "a+")
+            f1 = open(path + "metadata.txt", "a+")
+            f2 = open(path + "dump.txt", "a+")
+            #For now
+            node = Node(nodeId=n, ip=ip, port=port)
 
-        os.mkdir(f"logs_node_{n}", 0o777)
-        path = os.getcwd() + f"/logs_node_{n}/"
-        f = open(path + f"logs.txt", "a+")
-        f1 = open(path + "metadata.txt", "a+")
-        f2 = open(path + "dump.txt", "a+")
-        if leader:
-            command = input("Enter command")
-            comm = command.split(" ")
-            if comm[0] == "GET":
-                print("Get Operation")
-            elif comm[0] == "SET":
-                print("Set Operation")
+        else:
+            node = Node(nodeId=n, ip = ip, port=port)
+            os.mkdir(f"logs_node_{n}", 0o777)
+            path = os.getcwd() + f"/logs_node_{n}/"
+            f = open(path + f"logs.txt", "a+")
+            f1 = open(path + "metadata.txt", "a+")
+            f2 = open(path + "dump.txt", "a+")
+
+        if SuspectFail():
+            node.currentTerm+=1
+            node.votedFor = node.nodeId
+            node.votesReceived.append(node.nodeId)
+            node.currentRole="Candidate"
+            node.lastTerm=0
+            if len(node.log)>0:
+                node.lastTerm = node.log[len(node.log)-1].term
+            StartElection(node)
+
+
+
     except FileExistsError:
         pass
 

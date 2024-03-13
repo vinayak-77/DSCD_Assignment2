@@ -54,14 +54,16 @@ class RequestVotesArgs(_message.Message):
     def __init__(self, term: _Optional[int] = ..., candidateId: _Optional[int] = ..., lastLogIndex: _Optional[int] = ..., lastLogTerm: _Optional[int] = ...) -> None: ...
 
 class RequestVotesRes(_message.Message):
-    __slots__ = ("term", "voteGranted", "longestDurationRem")
+    __slots__ = ("term", "voteGranted", "longestDurationRem", "NodeId")
     TERM_FIELD_NUMBER: _ClassVar[int]
     VOTEGRANTED_FIELD_NUMBER: _ClassVar[int]
     LONGESTDURATIONREM_FIELD_NUMBER: _ClassVar[int]
+    NODEID_FIELD_NUMBER: _ClassVar[int]
     term: int
     voteGranted: bool
     longestDurationRem: int
-    def __init__(self, term: _Optional[int] = ..., voteGranted: bool = ..., longestDurationRem: _Optional[int] = ...) -> None: ...
+    NodeId: int
+    def __init__(self, term: _Optional[int] = ..., voteGranted: bool = ..., longestDurationRem: _Optional[int] = ..., NodeId: _Optional[int] = ...) -> None: ...
 
 class ServeClientArgs(_message.Message):
     __slots__ = ("Request",)
