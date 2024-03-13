@@ -3,14 +3,14 @@ import random
 import socket
 import sys
 import threading
-from xxlimited import Null
+
 
 import grpc
 from concurrent import futures
 import time
 import raft_pb2, raft_pb2_grpc
 import os
-from raftNode import Node
+from raftNode import Node,NodeList
 port = sys.argv[1]
 ip = socket.gethostbyname(socket.gethostname())
 other_nodes = ['localhost:50051','localhost:50052']
@@ -52,8 +52,16 @@ def StartElection():
                 stub = raft_pb2_grpc.RaftStub(channel)
                 # Replicating logs
                 for i in node.log:
-                    request = raft_pb2.AppendEntriesArgs()
-                    res = stub.ReplicateLog(request)
+                    queryNode = NodeList[i] # ! Replace i with node id
+                    prefixLen = queryNode.sentLength
+                    suffix = []
+                    for entryInd in range(prefixLen,len(node.log)):
+                        logEntry = node.log[entryInd]
+                        suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
+                    
+                    # request = raft_pb2.AppendEntriesArgs()
+                    req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
+                    res = stub.ReplicateLog(req)
 
     else:
         if response.term>node.currentTerm:
@@ -73,10 +81,19 @@ def SendBroadcast(msg):
                 stub = raft_pb2_grpc.RaftStub(channel)
                 # Replicating logs
                 for i in node.log:
-                    request = raft_pb2.AppendEntriesArgs()
-                    res = stub.ReplicateLog(request)
+                    queryNode = NodeList[i] # ! Replace i with node id
+                    prefixLen = queryNode.sentLength
+                    suffix = []
+                    for entryInd in range(prefixLen,len(node.log)):
+                        logEntry = node.log[entryInd]
+                        suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
+                    
+                    # request = raft_pb2.AppendEntriesArgs()
+                    req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
+                    res = stub.ReplicateLog(req)
     else:
         #Send to leader via FIFO link? No idea
+        # ? Should the nodes pass the client message to leader normally ?
         pass
 
 
@@ -115,7 +132,9 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         print(request.request)
         # return super().ServeClient(request, context)
     def ReplicateLog(self,request,context):
-        print(request.request)
+        # if(request.term > )
+        # TODO implement this functionality
+        pass
 
 
 def serve():

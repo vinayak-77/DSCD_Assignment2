@@ -1,5 +1,9 @@
 import logEntry
 
+NodeList = {}
+
+
+
 class Node:
   isLeader = False
   nodeId = -1
@@ -12,8 +16,8 @@ class Node:
   currentRole = "Follower"
   currentLeader = None
   votesReceived = []
-  sentLength = []
-  ackedLength = []
+  sentLength = 0
+  ackedLength = 0
   lastTerm = 0
   
   def __init__(self,nodeId,ip,port):

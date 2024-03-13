@@ -6,14 +6,16 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class entry(_message.Message):
-    __slots__ = ("index", "key", "val")
+    __slots__ = ("index", "term", "key", "val")
     INDEX_FIELD_NUMBER: _ClassVar[int]
+    TERM_FIELD_NUMBER: _ClassVar[int]
     KEY_FIELD_NUMBER: _ClassVar[int]
     VAL_FIELD_NUMBER: _ClassVar[int]
     index: int
+    term: int
     key: int
     val: int
-    def __init__(self, index: _Optional[int] = ..., key: _Optional[int] = ..., val: _Optional[int] = ...) -> None: ...
+    def __init__(self, index: _Optional[int] = ..., term: _Optional[int] = ..., key: _Optional[int] = ..., val: _Optional[int] = ...) -> None: ...
 
 class AppendEntriesArgs(_message.Message):
     __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "entries", "leaderCommit", "leaseInterval")
@@ -80,3 +82,31 @@ class ServeClientReply(_message.Message):
     LeaderID: str
     Success: bool
     def __init__(self, Data: _Optional[str] = ..., LeaderID: _Optional[str] = ..., Success: bool = ...) -> None: ...
+
+class ReplicateLogArgs(_message.Message):
+    __slots__ = ("leaderId", "currentTerm", "prefixLen", "prefixTerm", "commitLength", "suffix")
+    LEADERID_FIELD_NUMBER: _ClassVar[int]
+    CURRENTTERM_FIELD_NUMBER: _ClassVar[int]
+    PREFIXLEN_FIELD_NUMBER: _ClassVar[int]
+    PREFIXTERM_FIELD_NUMBER: _ClassVar[int]
+    COMMITLENGTH_FIELD_NUMBER: _ClassVar[int]
+    SUFFIX_FIELD_NUMBER: _ClassVar[int]
+    leaderId: int
+    currentTerm: int
+    prefixLen: int
+    prefixTerm: int
+    commitLength: int
+    suffix: _containers.RepeatedCompositeFieldContainer[entry]
+    def __init__(self, leaderId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., prefixLen: _Optional[int] = ..., prefixTerm: _Optional[int] = ..., commitLength: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ...) -> None: ...
+
+class ReplicateLogRes(_message.Message):
+    __slots__ = ("nodeId", "currentTerm", "ackLen", "receivedMessage")
+    NODEID_FIELD_NUMBER: _ClassVar[int]
+    CURRENTTERM_FIELD_NUMBER: _ClassVar[int]
+    ACKLEN_FIELD_NUMBER: _ClassVar[int]
+    RECEIVEDMESSAGE_FIELD_NUMBER: _ClassVar[int]
+    nodeId: int
+    currentTerm: int
+    ackLen: int
+    receivedMessage: bool
+    def __init__(self, nodeId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., ackLen: _Optional[int] = ..., receivedMessage: bool = ...) -> None: ...
