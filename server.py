@@ -3,6 +3,7 @@ import random
 import socket
 import sys
 import threading
+from xxlimited import Null
 
 import grpc
 from concurrent import futures
@@ -15,50 +16,73 @@ ip = socket.gethostbyname(socket.gethostname())
 other_nodes = ['localhost:50051','localhost:50052']
 leader = False
 
-
+node:Node = Node(nodeId="-1",ip="-1",port="-1")
 
 
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
-
     while True:
-        if time.time() >= time_rand and not leader:
-            StartElection()
-            if leader:
-                print("Leader")
+        if time.time() >= time_rand:
+            return True
 
 
-def StartElection(Node):
+
+
+def StartElection():
 
     votes = 0
     for i in other_nodes:
-        if i==Node.ipAddr+Node.port:
+        if i==node.ipAddr+node.port:
             continue
         with grpc.insecure_channel(i) as channel:
             stub = raft_pb2_grpc.RaftStub(channel)
             request = raft_pb2.RequestVotesArgs(term=1,candidateId=other_nodes.index(i),lastLogTerm=0,lastLogIndex=0)
             response = stub.RequestVote(request)
-            if (response.voteGranted == True):
-                Node.votesReceived.append(response.NodeId)
+            if (response.voteGranted == True and node.currentRole=="Candidate" and node.currentTerm==response.term):
+                node.votesReceived.append(response.NodeId)
 
-    if (len(Node.votesReceived) >= len(other_nodes) / 2):
-        Node.currentRole = "Leader"
+    if (len(node.votesReceived) >= len(other_nodes) / 2):
+        node.currentRole = "Leader"
+        node.currentLeader = node.nodeId
+        # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
+        # for i in other_nodes:
+        #     if i == Node.ipAddr + Node.port:
+        #         continue
+        #     with grpc.insecure_channel(i) as channel:
+        #         stub = raft_pb2_grpc.RaftStub(channel)
+
+
 
 def SuspectFail():
     pass
 
 class RaftServicer(raft_pb2_grpc.RaftServicer):
+
+
     def AppendEntries(self, request, context):
         print(request.term)
         # return super().AppendEntries(request, context)
 
     def RequestVote(self, request, context):
-        vote=True
-        if leader==True:
+        vote = True
+        if(request.term > node.currentTerm):
+            node.currentTerm = request.term
+            node.currentRole="Follower"
+            node.votedFor=None
+        node.lastTerm=0
+        if len(node.log)>0:
+            node.lastTerm = node.log[len(node.log)-1].term
+        ok = (request.lastLogTerm > node.lastTerm) or (request.lastLogTerm==node.lastTerm and request.lastLogIndex >= len(node.log))
+
+        if request.term == node.currentTerm and ok and node.votedFor==None:
+            node.votedFor = request.candidateId
+            vote=True
+        else:
             vote=False
 
         return raft_pb2.RequestVotesRes(term=1,voteGranted=vote,longestDurationRem=0)
-        # return super().RequestVote(request, context)
+
+
 
     def ServeClient(self, request, context):
         print(request.request)
@@ -66,12 +90,13 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
 
 def serve():
+    global node
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     n = int(input("Enter Node ID : "))
-    node = None
+
     try:
         if(os.path.isdir(f"logs_node_{n}")):
             #take data from log files
@@ -90,7 +115,7 @@ def serve():
             f1 = open(path + "metadata.txt", "a+")
             f2 = open(path + "dump.txt", "a+")
 
-        if SuspectFail():
+        if SuspectFail() or timeout():
             node.currentTerm+=1
             node.votedFor = node.nodeId
             node.votesReceived.append(node.nodeId)
@@ -98,7 +123,7 @@ def serve():
             node.lastTerm=0
             if len(node.log)>0:
                 node.lastTerm = node.log[len(node.log)-1].term
-            StartElection(node)
+            StartElection()
 
 
 
