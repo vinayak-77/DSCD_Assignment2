@@ -4,13 +4,15 @@ service Raft{
   rpc AppendEntries(AppendEntriesArgs) returns (AppendEntriesRes) {};
   rpc RequestVote(RequestVotesArgs) returns (RequestVotesRes) {};
   rpc ServeClient (ServeClientArgs) returns (ServeClientReply) {};
-  rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
+  // rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
+  rpc ReplicateLog(ReplicateLogArgs) returns (ReplicateLogRes) {};
 }
 
 message entry{
   int32 index = 1;
-  int32 key = 2;
-  int32 val = 3;
+  int32 term = 2;
+  int32 key = 3;
+  int32 val = 4;
 }
 
 message AppendEntriesArgs{
@@ -53,3 +55,20 @@ message ServeClientReply {
   bool Success = 3;
 }
 
+
+message ReplicateLogArgs {
+  int32 leaderId = 1;
+  int32 currentTerm = 2;
+  int32 prefixLen = 3;
+  int32 prefixTerm = 4;
+  int32 commitLength = 5;
+  repeated entry suffix = 6;
+}
+
+message ReplicateLogRes {
+  int32 nodeId = 1;
+  int32 currentTerm = 2;
+  int32 ackLen = 3;
+  bool receivedMessage = 4;
+
+}

@@ -31,8 +31,8 @@ class RaftStub(object):
                 )
         self.ReplicateLog = channel.unary_unary(
                 '/Raft/ReplicateLog',
-                request_serializer=raft__pb2.AppendEntriesArgs.SerializeToString,
-                response_deserializer=raft__pb2.AppendEntriesRes.FromString,
+                request_serializer=raft__pb2.ReplicateLogArgs.SerializeToString,
+                response_deserializer=raft__pb2.ReplicateLogRes.FromString,
                 )
 
 
@@ -58,7 +58,8 @@ class RaftServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ReplicateLog(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -83,8 +84,8 @@ def add_RaftServicer_to_server(servicer, server):
             ),
             'ReplicateLog': grpc.unary_unary_rpc_method_handler(
                     servicer.ReplicateLog,
-                    request_deserializer=raft__pb2.AppendEntriesArgs.FromString,
-                    response_serializer=raft__pb2.AppendEntriesRes.SerializeToString,
+                    request_deserializer=raft__pb2.ReplicateLogArgs.FromString,
+                    response_serializer=raft__pb2.ReplicateLogRes.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -159,7 +160,7 @@ class Raft(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Raft/ReplicateLog',
-            raft__pb2.AppendEntriesArgs.SerializeToString,
-            raft__pb2.AppendEntriesRes.FromString,
+            raft__pb2.ReplicateLogArgs.SerializeToString,
+            raft__pb2.ReplicateLogRes.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
