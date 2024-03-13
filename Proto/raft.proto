@@ -4,7 +4,7 @@ service Raft{
   rpc AppendEntries(AppendEntriesArgs) returns (AppendEntriesRes) {};
   rpc RequestVote(RequestVotesArgs) returns (RequestVotesRes) {};
   rpc ServeClient (ServeClientArgs) returns (ServeClientReply) {};
-
+  rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
 }
 
 message entry{

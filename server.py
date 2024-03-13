@@ -45,12 +45,39 @@ def StartElection():
         node.currentRole = "Leader"
         node.currentLeader = node.nodeId
         # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
-        # for i in other_nodes:
-        #     if i == Node.ipAddr + Node.port:
-        #         continue
-        #     with grpc.insecure_channel(i) as channel:
-        #         stub = raft_pb2_grpc.RaftStub(channel)
+        for i in other_nodes:
+            if i == Node.ipAddr + Node.port:
+                continue
+            with grpc.insecure_channel(i) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                # Replicating logs
+                for i in node.log:
+                    request = raft_pb2.AppendEntriesArgs()
+                    res = stub.ReplicateLog(request)
 
+    else:
+        if response.term>node.currentTerm:
+            node.currentTerm=response.term
+            node.currentRole="Follower"
+            node.votedFor=None
+
+
+def SendBroadcast(msg):
+    if node.currentRole=="Leader":
+        node.log.append(msg)
+        node.ackedLength[node.nodeId] = len(node.log)
+        for i in other_nodes:
+            if i == Node.ipAddr + Node.port:
+                continue
+            with grpc.insecure_channel(i) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                # Replicating logs
+                for i in node.log:
+                    request = raft_pb2.AppendEntriesArgs()
+                    res = stub.ReplicateLog(request)
+    else:
+        #Send to leader via FIFO link? No idea
+        pass
 
 
 def SuspectFail():
@@ -87,6 +114,8 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
     def ServeClient(self, request, context):
         print(request.request)
         # return super().ServeClient(request, context)
+    def ReplicateLog(self,request,context):
+        print(request.request)
 
 
 def serve():
