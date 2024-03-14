@@ -5,6 +5,18 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class msg(_message.Message):
+    __slots__ = ("msg",)
+    MSG_FIELD_NUMBER: _ClassVar[int]
+    msg: str
+    def __init__(self, msg: _Optional[str] = ...) -> None: ...
+
+class ack(_message.Message):
+    __slots__ = ("ack",)
+    ACK_FIELD_NUMBER: _ClassVar[int]
+    ack: int
+    def __init__(self, ack: _Optional[int] = ...) -> None: ...
+
 class entry(_message.Message):
     __slots__ = ("index", "term", "key", "val")
     INDEX_FIELD_NUMBER: _ClassVar[int]

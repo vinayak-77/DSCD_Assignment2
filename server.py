@@ -25,7 +25,7 @@ def setValue(key,value):
    
    entries = readItr.readlines()
    for entry in entries:
-       if(entry.split[0] == key):
+       if entry.split(" ")[0] == key:
            writeItr.write(key+" "+value+"\n")
        else:
            writeItr.write(entry)
@@ -37,9 +37,9 @@ def getValue(key):
     readItr = open("data.txt","r")
     entries = readItr.readlines()
     for entry in entries:
-        if(entry.split[0] == key):
+        if(entry.split(" ")[0] == key):
             readItr.close()
-            return entry.split[1]
+            return entry.split(" ")[1]
     readItr.close()  
     return ""
 
@@ -49,6 +49,8 @@ def noOp():
     writeItr.close()
     return ""
 
+def ReplicateLogs(req):
+    prefix = node.sentLength[req]
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
     while True:
@@ -78,20 +80,22 @@ def StartElection():
         for i in other_nodes:
             if i == Node.ipAddr + Node.port:
                 continue
-            with grpc.insecure_channel(i) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
+            # with grpc.insecure_channel(i) as channel:
+            #     stub = raft_pb2_grpc.RaftStub(channel)
                 # Replicating logs
-                for i in node.log:
-                    queryNode = NodeList[i] # ! Replace i with node id
-                    prefixLen = queryNode.sentLength
-                    suffix = []
-                    for entryInd in range(prefixLen,len(node.log)):
-                        logEntry = node.log[entryInd]
-                        suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
-                    
-                    # request = raft_pb2.AppendEntriesArgs()
-                    req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
-                    res = stub.ReplicateLog(req)
+            for j in node.log:
+                queryNode = NodeList[j] # ! Replace i with node id
+                prefixLen = queryNode.sentLength
+                suffix = []
+                for entryInd in range(prefixLen,len(node.log)):
+                    logEntry = node.log[entryInd]
+                    suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
+
+                # request = raft_pb2.AppendEntriesArgs()
+                req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
+                # TODO: Fill these
+                req1= [node.nodeId,"LeaderIp","FollowerId","FollowerIp"]
+                res = ReplicateLogs(req)
 
     else:
         if response.term>node.currentTerm:
@@ -101,34 +105,37 @@ def StartElection():
 
 
 def SendBroadcast(msg):
-    if node.currentRole=="Leader":
+    if node.currentRole == "Leader":
         node.log.append(msg)
         node.ackedLength[node.nodeId] = len(node.log)
         for i in other_nodes:
             if i == Node.ipAddr + Node.port:
                 continue
-            with grpc.insecure_channel(i) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
                 # Replicating logs
-                for i in node.log:
-                    queryNode = NodeList[i] # ! Replace i with node id
-                    prefixLen = queryNode.sentLength
-                    suffix = []
-                    for entryInd in range(prefixLen,len(node.log)):
-                        logEntry = node.log[entryInd]
-                        suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
-                    
-                    # request = raft_pb2.AppendEntriesArgs()
-                    req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
-                    res = stub.ReplicateLog(req)
+            for j in node.log:
+                queryNode = NodeList[j]  # ! Replace i with node id
+                prefixLen = queryNode.sentLength
+                suffix = []
+                for entryInd in range(prefixLen, len(node.log)):
+                    logEntry = node.log[entryInd]
+                    suffix.append(raft_pb2.entry(index=logEntry.index, term=logEntry.term, key=logEntry.key,
+                                                 val=logEntry.val))
+
+                # request = raft_pb2.AppendEntriesArgs()
+                req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
+                                                prefixLen=prefixLen, prefixTerm=node.log[prefixLen - 1].term,
+                                                commitLength=node.commitLength, suffix=suffix)
+                res = ReplicateLogs(req)
     else:
-        #Send to leader via FIFO link? No idea
+        # Send to leader via FIFO link? No idea
         # ? Should the nodes pass the client message to leader normally ?
         pass
 
 
 def SuspectFail():
     pass
+
+
 
 class RaftServicer(raft_pb2_grpc.RaftServicer):
 
@@ -165,7 +172,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         # ! Pass the message to leader
         # TODO
         if(node.nodeId != node.leaderId):
-            
+
             return raft_pb2.ServeClientReply(Data=data,LeaderID=node.leaderId,Success=False)
         if(operation == "SET"):
             key = request[1]
@@ -185,10 +192,12 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         pass
 
 
+
 def serve():
     global node
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
-    raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
+    raft_pb2_grpc.add_RaftServicer_to_server( RaftServicer(), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     n = int(input("Enter Node ID : "))

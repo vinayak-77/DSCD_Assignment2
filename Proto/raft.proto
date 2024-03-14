@@ -6,8 +6,16 @@ service Raft{
   rpc ServeClient (ServeClientArgs) returns (ServeClientReply) {};
   // rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
   rpc ReplicateLog(ReplicateLogArgs) returns (ReplicateLogRes) {};
+
 }
 
+message msg{
+  string msg=1;
+
+}
+message ack{
+  int32 ack=1;
+}
 message entry{
   int32 index = 1;
   int32 term = 2;
