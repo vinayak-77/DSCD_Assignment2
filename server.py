@@ -19,6 +19,36 @@ leader = False
 node:Node = Node(nodeId="-1",ip="-1",port="-1")
 
 
+def setValue(key,value):
+   readItr = open("data.txt","r")
+   writeItr = open("data.txt","w")
+   
+   entries = readItr.readlines()
+   for entry in entries:
+       if(entry.split[0] == key):
+           writeItr.write(key+" "+value+"\n")
+       else:
+           writeItr.write(entry)
+   writeItr.close()
+   readItr.close()
+   return ""
+   
+def getValue(key):
+    readItr = open("data.txt","r")
+    entries = readItr.readlines()
+    for entry in entries:
+        if(entry.split[0] == key):
+            readItr.close()
+            return entry.split[1]
+    readItr.close()  
+    return ""
+
+def noOp():
+    writeItr = open("data.txt","a")
+    writeItr.write("No-Op+\n")
+    writeItr.close()
+    return ""
+
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
     while True:
@@ -129,7 +159,25 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
 
     def ServeClient(self, request, context):
-        print(request.request)
+        request = request.split(" ")
+        operation = request[0]
+        data = ""
+        # ! Pass the message to leader
+        # TODO
+        if(node.nodeId != node.leaderId):
+            
+            return raft_pb2.ServeClientReply(Data=data,LeaderID=node.leaderId,Success=False)
+        if(operation == "SET"):
+            key = request[1]
+            value = request[2]
+            data = setValue(key,value)
+        elif(operation == "GET"):
+            key = request[1]
+            data = getValue(key)
+        else:
+            data = noOp()
+        return raft_pb2.ServeClientReply(Data=data,LeaderID=node.leaderId,Success=True)
+        # print(request.request)
         # return super().ServeClient(request, context)
     def ReplicateLog(self,request,context):
         # if(request.term > )
