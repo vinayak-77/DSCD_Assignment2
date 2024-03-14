@@ -29,8 +29,8 @@ class RaftStub(object):
                 request_serializer=raft__pb2.ServeClientArgs.SerializeToString,
                 response_deserializer=raft__pb2.ServeClientReply.FromString,
                 )
-        self.ReplicateLog = channel.unary_unary(
-                '/Raft/ReplicateLog',
+        self.ReplicateLogRequest = channel.unary_unary(
+                '/Raft/ReplicateLogRequest',
                 request_serializer=raft__pb2.ReplicateLogArgs.SerializeToString,
                 response_deserializer=raft__pb2.ReplicateLogRes.FromString,
                 )
@@ -57,7 +57,7 @@ class RaftServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ReplicateLog(self, request, context):
+    def ReplicateLogRequest(self, request, context):
         """rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -82,8 +82,8 @@ def add_RaftServicer_to_server(servicer, server):
                     request_deserializer=raft__pb2.ServeClientArgs.FromString,
                     response_serializer=raft__pb2.ServeClientReply.SerializeToString,
             ),
-            'ReplicateLog': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReplicateLog,
+            'ReplicateLogRequest': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReplicateLogRequest,
                     request_deserializer=raft__pb2.ReplicateLogArgs.FromString,
                     response_serializer=raft__pb2.ReplicateLogRes.SerializeToString,
             ),
@@ -149,7 +149,7 @@ class Raft(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def ReplicateLog(request,
+    def ReplicateLogRequest(request,
             target,
             options=(),
             channel_credentials=None,
@@ -159,7 +159,7 @@ class Raft(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/Raft/ReplicateLog',
+        return grpc.experimental.unary_unary(request, target, '/Raft/ReplicateLogRequest',
             raft__pb2.ReplicateLogArgs.SerializeToString,
             raft__pb2.ReplicateLogRes.FromString,
             options, channel_credentials,

@@ -60,7 +60,7 @@ def ReplicateLogs(req):
         with grpc.insecure_channel(i) as channel:
             stub = raft_pb2_grpc.RaftStub(channel)
             req = raft_pb2.ReplicateLogArgs()
-            res = stub.ReplicateLog(req)
+            res = stub.ReplicateLogRequest(req)
 
 
 def timeout():
@@ -107,7 +107,7 @@ def StartElection():
                 req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
                 # TODO: Fill these
                 req1= [node.nodeId,"LeaderIp","FollowerId","FollowerIp"]
-                res = ReplicateLogs(req)
+                res = ReplicateLogs(req1)
 
     else:
         if response.term>node.currentTerm:
@@ -137,7 +137,8 @@ def SendBroadcast(msg):
                 req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
                                                 prefixLen=prefixLen, prefixTerm=node.log[prefixLen - 1].term,
                                                 commitLength=node.commitLength, suffix=suffix)
-                res = ReplicateLogs(req)
+                req1 = [node.nodeId, "LeaderIp", "FollowerId", "FollowerIp"]
+                res = ReplicateLogs(req1)
     else:
         # Send to leader via FIFO link? No idea
         # ? Should the nodes pass the client message to leader normally ?
@@ -198,10 +199,24 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         return raft_pb2.ServeClientReply(Data=data,LeaderID=node.leaderId,Success=True)
         # print(request.request)
         # return super().ServeClient(request, context)
-    def ReplicateLog(self,request,context):
+    def ReplicateLogRequest(self,request,context):
         # if(request.term > )
         # TODO implement this functionality
-        pass
+        if request.term>node.currentTerm:
+            node.currentTerm=request.term
+            node.votedFor=None
+            #Cancel Election
+        if request.term==node.currentTerm:
+            node.currentRole="Follower"
+            node.currentLeader=request.leaderId
+        ok= (len(node.log)>=request.prefixLen) or (request.prefixLen==0 and node.log[request.prefixLen-1].term==request.prefixTerm)
+        if node.currentTerm==request.term and ok:
+            #Append Entries
+            node.ackedLength = request.prefixLen+len(request.suffix)
+            #Send Ack to leader of success
+        else:
+            #Send Ack to leader of failure
+            pass
 
 
 
