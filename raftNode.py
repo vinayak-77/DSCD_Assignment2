@@ -19,6 +19,7 @@ class Node:
   sentLength = 0
   ackedLength = 0
   lastTerm = 0
+  leaderId = -1
   
   def __init__(self,nodeId,ip,port):
     self.nodeId = nodeId
