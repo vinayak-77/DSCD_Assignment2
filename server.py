@@ -50,7 +50,19 @@ def noOp():
     return ""
 
 def ReplicateLogs(req):
-    prefix = node.sentLength[req]
+    prefix = node.sentLength[req[0]]
+    suffix = node.log[prefix:]
+    prefixTerm=0
+    if prefix>0:
+        prefixTerm=node.log[prefix-1].term
+
+    for i in other_nodes:
+        with grpc.insecure_channel(i) as channel:
+            stub = raft_pb2_grpc.RaftStub(channel)
+            req = raft_pb2.ReplicateLogArgs()
+            res = stub.ReplicateLog(req)
+
+
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
     while True:
