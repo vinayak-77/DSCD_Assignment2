@@ -1,6 +1,6 @@
 import logEntry
 
-NodeList = {}
+NodeList = {"1":'localhost:50051',"2":'localhost:50052'}
 
 
 

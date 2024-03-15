@@ -13,7 +13,7 @@ import os
 from raftNode import Node,NodeList
 port = sys.argv[1]
 ip = socket.gethostbyname(socket.gethostname())
-other_nodes = ['localhost:50051','localhost:50052']
+
 leader = False
 
 node:Node = Node(nodeId="-1",ip="-1",port="-1")
@@ -56,7 +56,7 @@ def ReplicateLogs(req):
     if prefix>0:
         prefixTerm=node.log[prefix-1].term
 
-    for i in other_nodes:
+    for j,i in NodeList.items():
         with grpc.insecure_channel(i) as channel:
             stub = raft_pb2_grpc.RaftStub(channel)
             req = raft_pb2.ReplicateLogArgs()
@@ -75,39 +75,39 @@ def timeout():
 def StartElection():
 
     votes = 0
-    for i in other_nodes:
+    for j,i in NodeList.items():
         if i==node.ipAddr+node.port:
             continue
         with grpc.insecure_channel(i) as channel:
             stub = raft_pb2_grpc.RaftStub(channel)
-            request = raft_pb2.RequestVotesArgs(term=1,candidateId=other_nodes.index(i),lastLogTerm=0,lastLogIndex=0)
+            request = raft_pb2.RequestVotesArgs(term=1,candidateId=j,lastLogTerm=0,lastLogIndex=0)
             response = stub.RequestVote(request)
             if (response.voteGranted == True and node.currentRole=="Candidate" and node.currentTerm==response.term):
                 node.votesReceived.append(response.NodeId)
 
-    if (len(node.votesReceived) >= len(other_nodes) / 2):
+    if (len(node.votesReceived) >= len(NodeList) / 2):
         node.currentRole = "Leader"
         node.currentLeader = node.nodeId
         # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
-        for i in other_nodes:
+        for j,i in NodeList.items():
             if i == Node.ipAddr + Node.port:
                 continue
             # with grpc.insecure_channel(i) as channel:
             #     stub = raft_pb2_grpc.RaftStub(channel)
                 # Replicating logs
-            for j in node.log:
-                queryNode = NodeList[j] # ! Replace i with node id
-                prefixLen = queryNode.sentLength
-                suffix = []
-                for entryInd in range(prefixLen,len(node.log)):
-                    logEntry = node.log[entryInd]
-                    suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
 
-                # request = raft_pb2.AppendEntriesArgs()
-                req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
-                # TODO: Fill these
-                req1= [node.nodeId,"LeaderIp","FollowerId","FollowerIp"]
-                res = ReplicateLogs(req1)
+            queryNode = NodeList[j] # ! Replace i with node id
+            prefixLen = queryNode.sentLength
+            suffix = []
+            for entryInd in range(prefixLen,len(node.log)):
+                logEntry = node.log[entryInd]
+                suffix.append(raft_pb2.entry(index=logEntry.index,term=logEntry.term,key=logEntry.key,val=logEntry.val))
+
+            # request = raft_pb2.AppendEntriesArgs()
+            req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId,currentTerm=node.currentTerm,prefixLen=prefixLen,prefixTerm=node.log[prefixLen-1].term,commitLength=node.commitLength,suffix=suffix)
+            # TODO: Fill these
+            req1= [node.nodeId,NodeList[node.nodeId],j,i]
+            res = ReplicateLogs(req1)
 
     else:
         if response.term>node.currentTerm:
@@ -120,25 +120,25 @@ def SendBroadcast(msg):
     if node.currentRole == "Leader":
         node.log.append(msg)
         node.ackedLength[node.nodeId] = len(node.log)
-        for i in other_nodes:
+        for j,i in NodeList.items():
             if i == Node.ipAddr + Node.port:
                 continue
                 # Replicating logs
-            for j in node.log:
-                queryNode = NodeList[j]  # ! Replace i with node id
-                prefixLen = queryNode.sentLength
-                suffix = []
-                for entryInd in range(prefixLen, len(node.log)):
-                    logEntry = node.log[entryInd]
-                    suffix.append(raft_pb2.entry(index=logEntry.index, term=logEntry.term, key=logEntry.key,
-                                                 val=logEntry.val))
 
-                # request = raft_pb2.AppendEntriesArgs()
-                req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
-                                                prefixLen=prefixLen, prefixTerm=node.log[prefixLen - 1].term,
-                                                commitLength=node.commitLength, suffix=suffix)
-                req1 = [node.nodeId, "LeaderIp", "FollowerId", "FollowerIp"]
-                res = ReplicateLogs(req1)
+            queryNode = NodeList[j]  # ! Replace i with node id
+            prefixLen = queryNode.sentLength
+            suffix = []
+            for entryInd in range(prefixLen, len(node.log)):
+                logEntry = node.log[entryInd]
+                suffix.append(raft_pb2.entry(index=logEntry.index, term=logEntry.term, key=logEntry.key,
+                                             val=logEntry.val))
+
+            # request = raft_pb2.AppendEntriesArgs()
+            req = raft_pb2.ReplicateLogArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
+                                            prefixLen=prefixLen, prefixTerm=node.log[prefixLen - 1].term,
+                                            commitLength=node.commitLength, suffix=suffix)
+            req1= [node.nodeId,NodeList[node.nodeId],j,i]
+            res = ReplicateLogs(req1)
     else:
         # Send to leader via FIFO link? No idea
         # ? Should the nodes pass the client message to leader normally ?
