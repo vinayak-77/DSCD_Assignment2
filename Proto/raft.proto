@@ -6,7 +6,7 @@ service Raft{
   rpc ServeClient (ServeClientArgs) returns (ServeClientReply) {};
   // rpc ReplicateLog (AppendEntriesArgs) returns (AppendEntriesRes){};
   rpc ReplicateLogRequest(ReplicateLogRequestArgs) returns (ReplicateLogRequestRes) {};
-  rpc ReplicateLogRespone(ReplicateLogResponseArgs) returns (ReplicateLogResponseRes) {};
+  rpc ReplicateLogResponse(ReplicateLogResponseArgs) returns (ReplicateLogResponseRes) {};
   rpc CommitEntries(CommitArgs) returns (CommitRes) {};
 
 }
