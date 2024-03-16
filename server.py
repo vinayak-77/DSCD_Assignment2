@@ -230,7 +230,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 node.sentLength[request.followerId] = request.ack
                 node.ackedLength[request.followerId] = request.ack
                 #Commit Log
-                req = raft_pb2.CommitEntriesArgs()
+                req = raft_pb2.CommitArgs()
                 res=self.CommitEntries(req,context)
             elif node.sentLength[request.followerId] > 0 :
                 node.sentLength[request.followerId] -=1
