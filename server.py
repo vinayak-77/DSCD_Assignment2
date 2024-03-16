@@ -224,13 +224,14 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 stub = raft_pb2_grpc.RaftStub(channel)
                 req = raft_pb2.ReplicateLogResponseArgs(node.nodeId, node.currentTerm, 0, False)
                 res = stub.ReplicateLogRespone(req)
-    def ReplicateLogRespone(self, request, context):
+    def ReplicateLogResponse(self, request, context):
         if node.currentTerm == request.followerterm and node.currentRole=="Leader":
             if request.success==True and request.ack >= node.ackedLength[request.followerId]:
                 node.sentLength[request.followerId] = request.ack
                 node.ackedLength[request.followerId] = request.ack
                 #Commit Log
-                self.CommitEntries(context)
+                req = raft_pb2.CommitEntriesArgs()
+                res=self.CommitEntries(req,context)
             elif node.sentLength[request.followerId] > 0 :
                 node.sentLength[request.followerId] -=1
                 #Replicate Log
