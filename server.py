@@ -212,11 +212,48 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         ok= (len(node.log)>=request.prefixLen) or (request.prefixLen==0 and node.log[request.prefixLen-1].term==request.prefixTerm)
         if node.currentTerm==request.term and ok:
             #Append Entries
-            node.ackedLength = request.prefixLen+len(request.suffix)
+            ack = request.prefixLen+len(request.suffix)
+            with grpc.insecure_channel(NodeList[node.leaderId]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                req = raft_pb2.ReplicateLogResponseArgs(node.nodeId,node.currentTerm,ack,True)
+                res = stub.ReplicateLogRespone(req)
             #Send Ack to leader of success
         else:
             #Send Ack to leader of failure
-            pass
+            with grpc.insecure_channel(NodeList[node.leaderId]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                req = raft_pb2.ReplicateLogResponseArgs(node.nodeId, node.currentTerm, 0, False)
+                res = stub.ReplicateLogRespone(req)
+    def ReplicateLogRespone(self, request, context):
+        if node.currentTerm == request.followerterm and node.currentRole=="Leader":
+            if request.success==True and request.ack >= node.ackedLength[request.followerId]:
+                node.sentLength[request.followerId] = request.ack
+                node.ackedLength[request.followerId] = request.ack
+                #Commit Log
+                self.CommitEntries(context)
+            elif node.sentLength[request.followerId] > 0 :
+                node.sentLength[request.followerId] -=1
+                #Replicate Log
+        elif request.followerterm > node.currentTerm:
+            node.currentTerm=request.followerterm
+            node.currentRole = "Follower"
+            node.votedFor = None
+            #Cancel Election
+    def CommitEntries(self,context):
+        minacks = (len(NodeList)+1)/2
+        ready=[]
+        # TODO: Didnt get this
+        for i in range(1,len(node.log)):
+            ready.append(0)
+        if ready!=[] and max(ready)>node.commitLength and node.log[max(ready)-1].term==node.currentTerm:
+            for i in range(node.commitLength,max(ready)):
+                #Deliver Log message to application
+                continue
+            node.commitLength=max(ready)
+
+
+
+
 
 
 
