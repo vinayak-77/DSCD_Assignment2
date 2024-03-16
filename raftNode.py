@@ -1,4 +1,6 @@
 import logEntry
+import time
+import random
 
 NodeList = {1:'localhost:50051',2:'localhost:50052'}
 
@@ -20,11 +22,15 @@ class Node:
   ackedLength = 0
   lastTerm = 0
   leaderId = -1
+  startTime = 0
+  lastIndex = -1
+  timer = 0
   
   def __init__(self,nodeId,ip,port):
     self.nodeId = nodeId
     self.ipAddr = ip
     self.port = port
+    self.timer = random.randint(5,11)
     
   def onCrashRecovery(self):
     self.currentRole = "Follower"
@@ -39,5 +45,11 @@ class Node:
     self.votedFor = self.nodeId
     self.votesReceived = [self.nodeId]
 
+  def startTimer(self):
+    self.startTime = time.time()
+  
+  def checkTimeout(self):
+    return time.time() > self.startTime+self.timer
+  
     if(len(self.log) > 0):
       self.lastTerm = self.log[len(self.log)-1].term
