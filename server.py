@@ -73,14 +73,15 @@ def timeout():
 
 
 def StartElection():
-
+    
+    node.startTimer()
     votes = 0
     for j,i in NodeList.items():
         if i==node.ipAddr+node.port:
             continue
         with grpc.insecure_channel(i) as channel:
             stub = raft_pb2_grpc.RaftStub(channel)
-            request = raft_pb2.RequestVotesArgs(term=1,candidateId=j,lastLogTerm=0,lastLogIndex=0)
+            request = raft_pb2.RequestVotesArgs(term=node.currentTerm,candidateId=j,lastLogTerm=node.lastTerm,lastLogIndex=node.lastIndex)
             response = stub.RequestVote(request)
             if (response.voteGranted == True and node.currentRole=="Candidate" and node.currentTerm==response.term):
                 node.votesReceived.append(response.NodeId)
@@ -174,7 +175,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         else:
             vote=False
 
-        return raft_pb2.RequestVotesRes(term=1,voteGranted=vote,longestDurationRem=0)
+        return raft_pb2.RequestVotesRes(term=node.currentTerm,voteGranted=vote,longestDurationRem=0)
 
 
 
@@ -284,13 +285,16 @@ def serve():
             f = open(path + f"logs.txt", "a+")
             f1 = open(path + "metadata.txt", "a+")
             f2 = open(path + "dump.txt", "a+")
+            
+        node.startTimer()
 
-        if SuspectFail() or timeout():
+        if SuspectFail() or node.checkTimeout():
             node.currentTerm+=1
             node.votedFor = node.nodeId
             node.votesReceived.append(node.nodeId)
             node.currentRole="Candidate"
             node.lastTerm=0
+            
             if len(node.log)>0:
                 node.lastTerm = node.log[len(node.log)-1].term
             StartElection()
