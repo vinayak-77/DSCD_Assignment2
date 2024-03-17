@@ -95,7 +95,7 @@ class ServeClientReply(_message.Message):
     Success: bool
     def __init__(self, Data: _Optional[str] = ..., LeaderID: _Optional[str] = ..., Success: bool = ...) -> None: ...
 
-class ReplicateLogArgs(_message.Message):
+class ReplicateLogRequestArgs(_message.Message):
     __slots__ = ("leaderId", "currentTerm", "prefixLen", "prefixTerm", "commitLength", "suffix")
     LEADERID_FIELD_NUMBER: _ClassVar[int]
     CURRENTTERM_FIELD_NUMBER: _ClassVar[int]
@@ -111,7 +111,7 @@ class ReplicateLogArgs(_message.Message):
     suffix: _containers.RepeatedCompositeFieldContainer[entry]
     def __init__(self, leaderId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., prefixLen: _Optional[int] = ..., prefixTerm: _Optional[int] = ..., commitLength: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ...) -> None: ...
 
-class ReplicateLogRes(_message.Message):
+class ReplicateLogRequestRes(_message.Message):
     __slots__ = ("nodeId", "currentTerm", "ackLen", "receivedMessage")
     NODEID_FIELD_NUMBER: _ClassVar[int]
     CURRENTTERM_FIELD_NUMBER: _ClassVar[int]
@@ -122,3 +122,27 @@ class ReplicateLogRes(_message.Message):
     ackLen: int
     receivedMessage: bool
     def __init__(self, nodeId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., ackLen: _Optional[int] = ..., receivedMessage: bool = ...) -> None: ...
+
+class ReplicateLogResponseArgs(_message.Message):
+    __slots__ = ("followerId", "followerTerm", "ack", "success")
+    FOLLOWERID_FIELD_NUMBER: _ClassVar[int]
+    FOLLOWERTERM_FIELD_NUMBER: _ClassVar[int]
+    ACK_FIELD_NUMBER: _ClassVar[int]
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    followerId: int
+    followerTerm: int
+    ack: int
+    success: bool
+    def __init__(self, followerId: _Optional[int] = ..., followerTerm: _Optional[int] = ..., ack: _Optional[int] = ..., success: bool = ...) -> None: ...
+
+class ReplicateLogResponseRes(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class CommitArgs(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class CommitRes(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

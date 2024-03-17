@@ -3,7 +3,7 @@ import grpc
 import raft_pb2_grpc
 import raft_pb2
 
-other_nodes = ['localhost:50051', 'localhost:50052']
+other_nodes = ['127.0.0.1:50051', '127.0.0.1:50052']
 leader_node = {0:'localhost:50051'}
 leader_ip = 'localhost:50051'
 ind = 0

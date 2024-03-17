@@ -31,8 +31,18 @@ class RaftStub(object):
                 )
         self.ReplicateLogRequest = channel.unary_unary(
                 '/Raft/ReplicateLogRequest',
-                request_serializer=raft__pb2.ReplicateLogArgs.SerializeToString,
-                response_deserializer=raft__pb2.ReplicateLogRes.FromString,
+                request_serializer=raft__pb2.ReplicateLogRequestArgs.SerializeToString,
+                response_deserializer=raft__pb2.ReplicateLogRequestRes.FromString,
+                )
+        self.ReplicateLogResponse = channel.unary_unary(
+                '/Raft/ReplicateLogResponse',
+                request_serializer=raft__pb2.ReplicateLogResponseArgs.SerializeToString,
+                response_deserializer=raft__pb2.ReplicateLogResponseRes.FromString,
+                )
+        self.CommitEntries = channel.unary_unary(
+                '/Raft/CommitEntries',
+                request_serializer=raft__pb2.CommitArgs.SerializeToString,
+                response_deserializer=raft__pb2.CommitRes.FromString,
                 )
 
 
@@ -64,6 +74,18 @@ class RaftServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReplicateLogResponse(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CommitEntries(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RaftServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -84,8 +106,18 @@ def add_RaftServicer_to_server(servicer, server):
             ),
             'ReplicateLogRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.ReplicateLogRequest,
-                    request_deserializer=raft__pb2.ReplicateLogArgs.FromString,
-                    response_serializer=raft__pb2.ReplicateLogRes.SerializeToString,
+                    request_deserializer=raft__pb2.ReplicateLogRequestArgs.FromString,
+                    response_serializer=raft__pb2.ReplicateLogRequestRes.SerializeToString,
+            ),
+            'ReplicateLogResponse': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReplicateLogResponse,
+                    request_deserializer=raft__pb2.ReplicateLogResponseArgs.FromString,
+                    response_serializer=raft__pb2.ReplicateLogResponseRes.SerializeToString,
+            ),
+            'CommitEntries': grpc.unary_unary_rpc_method_handler(
+                    servicer.CommitEntries,
+                    request_deserializer=raft__pb2.CommitArgs.FromString,
+                    response_serializer=raft__pb2.CommitRes.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -160,7 +192,41 @@ class Raft(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/Raft/ReplicateLogRequest',
-            raft__pb2.ReplicateLogArgs.SerializeToString,
-            raft__pb2.ReplicateLogRes.FromString,
+            raft__pb2.ReplicateLogRequestArgs.SerializeToString,
+            raft__pb2.ReplicateLogRequestRes.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ReplicateLogResponse(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Raft/ReplicateLogResponse',
+            raft__pb2.ReplicateLogResponseArgs.SerializeToString,
+            raft__pb2.ReplicateLogResponseRes.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CommitEntries(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Raft/CommitEntries',
+            raft__pb2.CommitArgs.SerializeToString,
+            raft__pb2.CommitRes.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

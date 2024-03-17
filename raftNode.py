@@ -1,8 +1,8 @@
 import logEntry
 import time
 import random
-
-NodeList = {1:'localhost:50051',2:'localhost:50052'}
+from logEntry import logEntry
+NodeList = {1:'127.0.0.1:50051',2:'127.0.0.1:50052'}
 
 
 
@@ -13,24 +13,26 @@ class Node:
   port = ""
   currentTerm = 0
   votedFor = None
-  log = []
+  log : [logEntry]
   commitLength = 0
   currentRole = "Follower"
   currentLeader = None
   votesReceived = []
-  sentLength = 0
-  ackedLength = 0
+  sentLength = {}
+  ackedLength = {}
   lastTerm = 0
   leaderId = -1
   startTime = 0
-  lastIndex = -1
+  lastIndex = 0
   timer = 0
+  val=False
   
   def __init__(self,nodeId,ip,port):
     self.nodeId = nodeId
     self.ipAddr = ip
     self.port = port
-    self.timer = random.randint(5,11)
+    self.timer = random.uniform(5,11)
+    self.log = []
     
   def onCrashRecovery(self):
     self.currentRole = "Follower"
@@ -49,7 +51,13 @@ class Node:
     self.startTime = time.time()
   
   def checkTimeout(self):
-    return time.time() > self.startTime+self.timer
-  
-    if(len(self.log) > 0):
-      self.lastTerm = self.log[len(self.log)-1].term
+    while True:
+      if self.cancel():
+        return False
+      if time.time() > self.startTime+self.timer:
+        return True
+  def cancel(self):
+    return self.val
+    #
+    # if(len(self.log) > 0):
+    #   self.lastTerm = self.log[len(self.log)-1].term
