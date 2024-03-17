@@ -30,22 +30,24 @@ class entry(_message.Message):
     def __init__(self, index: _Optional[int] = ..., term: _Optional[int] = ..., key: _Optional[int] = ..., val: _Optional[int] = ...) -> None: ...
 
 class AppendEntriesArgs(_message.Message):
-    __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "entries", "leaderCommit", "leaseInterval")
+    __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "suffix", "leaderCommit", "leaseInterval", "prefixLen")
     TERM_FIELD_NUMBER: _ClassVar[int]
     LEADERID_FIELD_NUMBER: _ClassVar[int]
     PREVLOGINDEX_FIELD_NUMBER: _ClassVar[int]
     PREVLOGTERM_FIELD_NUMBER: _ClassVar[int]
-    ENTRIES_FIELD_NUMBER: _ClassVar[int]
+    SUFFIX_FIELD_NUMBER: _ClassVar[int]
     LEADERCOMMIT_FIELD_NUMBER: _ClassVar[int]
     LEASEINTERVAL_FIELD_NUMBER: _ClassVar[int]
+    PREFIXLEN_FIELD_NUMBER: _ClassVar[int]
     term: int
     leaderId: int
     prevLogIndex: int
     prevLogTerm: int
-    entries: _containers.RepeatedCompositeFieldContainer[entry]
+    suffix: _containers.RepeatedCompositeFieldContainer[entry]
     leaderCommit: int
     leaseInterval: int
-    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., entries: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[int] = ...) -> None: ...
+    prefixLen: int
+    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[int] = ..., prefixLen: _Optional[int] = ...) -> None: ...
 
 class AppendEntriesRes(_message.Message):
     __slots__ = ("term", "success")

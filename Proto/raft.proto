@@ -30,9 +30,10 @@ message AppendEntriesArgs{
   int32 leaderId = 2;
   int32 prevLogIndex = 3;
   int32 prevLogTerm = 4;
-  repeated entry entries = 5;
+  repeated entry suffix = 5;
   int32 leaderCommit = 6;
   int32 leaseInterval = 7;
+  int32 prefixLen = 8;
 }
 
 message AppendEntriesRes{

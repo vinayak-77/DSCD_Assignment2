@@ -154,6 +154,20 @@ def SuspectFail():
 class RaftServicer(raft_pb2_grpc.RaftServicer):
 
     def AppendEntries(self, request, context):
+        
+        if(request.suffix.length() > 0 and node.log.length() > request.prefixLen):
+            index = min(node.log.length(),request.prefixLen+request.suffix.length())-1
+            if(node.log[index].term != request.suffix[index-request.prefixLen].term):
+                node.log = node.log[0:request.prefixLen]
+
+        if(request.prefixLen +request.suffix.length() > node.log.length()):
+            for i in range(node.log.length()-request.prefixLen,request.suffix.length()):
+                node.log.append(request.suffix[i])
+                
+        if(request.leaderCommit > node.commitLength):
+            for i in range(node.commitLength,request.leaderCommit):
+                pass # !TODO send back to application
+            node.commitLength = request.leaderCommit
         print(request.term)
         # return super().AppendEntries(request, context)
 
@@ -219,6 +233,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 request.prefixLen == 0 and node.log[request.prefixLen - 1].term == request.prefixTerm)
         if node.currentTerm == request.currentTerm and ok:
             # Append Entries
+            
             ack = request.prefixLen + len(request.suffix)
             with grpc.insecure_channel(NodeList[node.currentLeader]) as channel:
                 stub = raft_pb2_grpc.RaftStub(channel)
