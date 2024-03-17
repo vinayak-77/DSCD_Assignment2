@@ -62,17 +62,13 @@ def ReplicateLogs(req):
 
     # request = raft_pb2.AppendEntriesArgs()
 
-    for j, i in NodeList.items():
-        print(j,i)
-        if i == ip+":"+port:
-            continue
-        with grpc.insecure_channel(i) as channel:
-            stub = raft_pb2_grpc.RaftStub(channel)
-            req = raft_pb2.ReplicateLogRequestArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
-                                                   prefixLen=prefix, prefixTerm=prefixTerm,
-                                                   commitLength=node.commitLength, suffix=suffix)
-            res = stub.ReplicateLogRequest(req)
-            print(res)
+    with grpc.insecure_channel(req[3]) as channel:
+        stub = raft_pb2_grpc.RaftStub(channel)
+        req = raft_pb2.ReplicateLogRequestArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
+                                               prefixLen=prefix, prefixTerm=prefixTerm,
+                                               commitLength=node.commitLength, suffix=suffix)
+        res = stub.ReplicateLogRequest(req)
+        print(res)
 
 
 def timeout():
@@ -171,7 +167,6 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         if len(node.log) > 0:
             node.lastTerm = node.log[len(node.log) - 1].term
 
-
         ok = (request.lastLogTerm > node.lastTerm) or (
                 request.lastLogTerm == node.lastTerm and request.lastLogIndex >= len(node.log))
 
@@ -227,7 +222,8 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
             ack = request.prefixLen + len(request.suffix)
             with grpc.insecure_channel(NodeList[node.currentLeader]) as channel:
                 stub = raft_pb2_grpc.RaftStub(channel)
-                req = raft_pb2.ReplicateLogResponseArgs(followerId=node.nodeId,followerTerm=node.currentTerm, ack=ack,success= True)
+                req = raft_pb2.ReplicateLogResponseArgs(followerId=node.nodeId, followerTerm=node.currentTerm, ack=ack,
+                                                        success=True)
                 res = stub.ReplicateLogResponse(req)
                 print(res)
             # Send Ack to leader of success
@@ -237,6 +233,8 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 stub = raft_pb2_grpc.RaftStub(channel)
                 req = raft_pb2.ReplicateLogResponseArgs(node.nodeId, node.currentTerm, 0, False)
                 res = stub.ReplicateLogResponse(req)
+        return raft_pb2.ReplicateLogRequestRes(nodeId=node.nodeId,currentTerm=node.currentTerm,ackLen=0,receivedMessage=True)
+
 
     def ReplicateLogResponse(self, request, context):
         if node.currentTerm == request.followerTerm and node.currentRole == "Leader":
@@ -254,6 +252,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
             node.currentRole = "Follower"
             node.votedFor = None
             # Cancel Election
+        return raft_pb2.ReplicateLogResponseRes()
 
     def CommitEntries(self, request, context):
         minacks = (len(NodeList) + 1) / 2
