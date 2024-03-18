@@ -98,6 +98,7 @@ def StartElection():
         print("Leader")
         node.currentRole = "Leader"
         node.currentLeader = node.nodeId
+        node.leaderId = node.nodeId
         # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
         for j, i in NodeList.items():
             if i == Node.ipAddr + Node.port:
@@ -188,24 +189,25 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
         if request.term == node.currentTerm and ok and node.votedFor is None:
             node.votedFor = request.candidateId
-
             node.val = True
-            print("Follower")
+            node.leaderId = request.candidateId
+
         else:
-            print("hello false")
+
             vote = False
-        print(vote)
+
         return raft_pb2.RequestVotesRes(term=node.currentTerm, voteGranted=vote, longestDurationRem=0,
                                         NodeId=node.nodeId)
 
     def ServeClient(self, request, context):
-        request = request.split(" ")
+        request= request.Request.split(" ")
+        # request = request.Request.split(" ")
         operation = request[0]
         data = ""
-        # ! Pass the message to leader
-        # TODO
+        # # ! Pass the message to leader
+        # # TODO
         if (node.nodeId != node.leaderId):
-            return raft_pb2.ServeClientReply(Data=data, LeaderID=node.leaderId, Success=False)
+            return raft_pb2.ServeClientReply(Data=data, LeaderID=str(node.currentLeader), Success=False)
         if (operation == "SET"):
             key = request[1]
             value = request[2]
@@ -215,7 +217,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
             data = getValue(key)
         else:
             data = noOp()
-        return raft_pb2.ServeClientReply(Data=data, LeaderID=node.leaderId, Success=True)
+        return raft_pb2.ServeClientReply(Data="data", LeaderID=str(node.currentLeader), Success=True)
         # print(request.request)
         # return super().ServeClient(request, context)
 
