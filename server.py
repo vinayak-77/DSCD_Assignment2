@@ -13,11 +13,12 @@ import raft_pb2_grpc
 from raftNode import Node, NodeList
 
 port = sys.argv[1]
+nodeId = sys.argv[2]
 ip = socket.gethostbyname(socket.gethostname())
 
 leader = False
 
-node: Node = Node(nodeId="-1", ip="-1", port="-1")
+node: Node = Node(nodeId=nodeId, ip=ip, port=port)
 
 open_nodes = {}
 
@@ -40,18 +41,16 @@ def NodeDetector():
 
 
 def setValue(key, value):
-    readItr = open("data.txt", "r")
-    writeItr = open("data.txt", "w")
-
-    entries = readItr.readlines()
-    for entry in entries:
-        if entry.split(" ")[0] == key:
-            writeItr.write(key + " " + value + "\n")
-        else:
-            writeItr.write(entry)
+    # readItr = open("data.txt", "r")
+    writeItr = open("data.txt", "a")
+    print("FILE OPENED")
+    # entries = readItr.readlines()
+    
+    writeItr.write(key + " " + value + "\n")
+        
     writeItr.close()
-    readItr.close()
-    return ""
+    # readItr.close()
+    return -1
 
 
 def getValue(key):
@@ -62,14 +61,14 @@ def getValue(key):
             readItr.close()
             return entry.split(" ")[1]
     readItr.close()
-    return ""
+    return "NO"
 
 
 def noOp():
     writeItr = open("data.txt", "a")
     writeItr.write("No-Op+\n")
     writeItr.close()
-    return ""
+    return "NO"
 
 
 def ReplicateLogs(req):
@@ -220,6 +219,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                                         NodeId=node.nodeId)
 
     def ServeClient(self, request, context):
+        print("Calling ....")
         request = request.Request.split(" ")
         # request = request.Request.split(" ")
         operation = request[0]
@@ -231,13 +231,27 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         if (operation == "SET"):
             key = request[1]
             value = request[2]
-            data = setValue(key, value)
+            writeItr = open("data.txt", "a")
+            # print("FILE OPENED")
+            # entries = readItr.readlines()
+            data = str(value)
+            # writeItr.write(f"{key} {value} \n")
+            writeItr.write("SETTING")
+            writeItr.close()
         elif (operation == "GET"):
+            
             key = request[1]
             data = getValue(key)
         else:
+            writeItr = open("data.txt", "a")
+            # print("FILE OPENED")
+            # entries = readItr.readlines()
+            data = str(value)
+            # writeItr.write(f"{key} {value} \n")
+            writeItr.write("SETTING")
+            writeItr.close()
             data = noOp()
-        return raft_pb2.ServeClientReply(Data="data", LeaderID=str(node.currentLeader), Success=True)
+        return raft_pb2.ServeClientReply(Data=str(data), LeaderID=str(node.currentLeader), Success=True)
         # print(request.request)
         # return super().ServeClient(request, context)
 
@@ -314,7 +328,7 @@ def serve():
             n = k
     print(n, addr)
     f=open("nodes.txt","a")
-    f.write(ip + ":" + port + " " + str(n) + "\n")
+    f.write(ip + ":" + port + " " + str(n) + " "+"\n")
     f.close()
     time.sleep(10)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
