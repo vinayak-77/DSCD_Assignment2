@@ -219,37 +219,29 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                                         NodeId=node.nodeId)
 
     def ServeClient(self, request, context):
-        print("Calling ....")
+        print(node.nodeId,node.currentLeader)
         request = request.Request.split(" ")
         # request = request.Request.split(" ")
         operation = request[0]
+        print(operation)
         data = ""
         # # ! Pass the message to leader
         # # TODO
-        if (node.nodeId != node.leaderId):
+        if (node.nodeId != node.currentLeader):
+            print("Not leader ....")
             return raft_pb2.ServeClientReply(Data=data, LeaderID=str(node.currentLeader), Success=False)
         if (operation == "SET"):
             key = request[1]
             value = request[2]
-            writeItr = open("data.txt", "a")
-            # print("FILE OPENED")
-            # entries = readItr.readlines()
-            data = str(value)
-            # writeItr.write(f"{key} {value} \n")
-            writeItr.write("SETTING")
-            writeItr.close()
+            node.data[key] = value
+            print(node.data)
         elif (operation == "GET"):
-            
+            print("Get req")
             key = request[1]
-            data = getValue(key)
+            data = str(node.data[key])
+            print(node.data[key])
         else:
-            writeItr = open("data.txt", "a")
-            # print("FILE OPENED")
-            # entries = readItr.readlines()
-            data = str(value)
-            # writeItr.write(f"{key} {value} \n")
-            writeItr.write("SETTING")
-            writeItr.close()
+            
             data = noOp()
         return raft_pb2.ServeClientReply(Data=str(data), LeaderID=str(node.currentLeader), Success=True)
         # print(request.request)

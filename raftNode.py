@@ -26,6 +26,7 @@ class Node:
   lastIndex = 0
   timer = 0
   val=False
+  data = {}
   
   def __init__(self,nodeId,ip,port):
     self.nodeId = nodeId
