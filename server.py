@@ -19,6 +19,25 @@ leader = False
 
 node: Node = Node(nodeId="-1", ip="-1", port="-1")
 
+open_nodes = {}
+
+
+
+def NodeDetector():
+    time.sleep(4)
+
+    while True:
+        f=open("nodes.txt","r")
+        nodes = f.read().split("\n")
+        f.close()
+        for i in nodes:
+            k = i.split(" ")
+            if k == ['']:
+                continue
+            if int(k[1]) not in open_nodes:
+                open_nodes[int(k[1])] = k[0]
+                print(open_nodes)
+
 
 def setValue(key, value):
     readItr = open("data.txt", "r")
@@ -81,7 +100,7 @@ def timeout():
 def StartElection():
     node.startTimer()
     votes = 0
-    for j, i in NodeList.items():
+    for j, i in open_nodes.items():
         if i == node.ipAddr + ":" + node.port:
             continue
         with grpc.insecure_channel(i) as channel:
@@ -93,14 +112,14 @@ def StartElection():
             if (response.voteGranted == True and node.currentRole == "Candidate" and node.currentTerm == response.term):
                 node.votesReceived.append(response.NodeId)
 
-    if (len(node.votesReceived) >= len(NodeList) / 2):
+    if (len(node.votesReceived) >= len(open_nodes) / 2):
         print(node.votesReceived)
         print("Leader")
         node.currentRole = "Leader"
         node.currentLeader = node.nodeId
         node.leaderId = node.nodeId
         # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
-        for j, i in NodeList.items():
+        for j, i in open_nodes.items():
             if i == Node.ipAddr + Node.port:
                 continue
 
@@ -108,7 +127,8 @@ def StartElection():
 
             node.sentLength[j] = len(node.log)
             node.ackedLength[j] = 0
-            req1 = [node.nodeId, NodeList[node.nodeId], j, i]
+            req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
+            print(req1)
             ReplicateLogs(req1)
 
     else:
@@ -123,12 +143,12 @@ def SendBroadcast(msg):
     if node.currentRole == "Leader":
         node.log.append(msg)
         node.ackedLength[node.nodeId] = len(node.log)
-        for j, i in NodeList.items():
+        for j, i in open_nodes.items():
             if i == Node.ipAddr + Node.port:
                 continue
                 # Replicating logs
 
-            queryNode = NodeList[j]  # ! Replace i with node id
+            queryNode = open_nodes[j]  # ! Replace i with node id
             prefixLen = queryNode.sentLength
             suffix = []
             for entryInd in range(prefixLen, len(node.log)):
@@ -140,7 +160,7 @@ def SendBroadcast(msg):
             req = raft_pb2.ReplicateLogRequestArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
                                                    prefixLen=prefixLen, prefixTerm=node.log[prefixLen - 1].term,
                                                    commitLength=node.commitLength, suffix=suffix)
-            req1 = [node.nodeId, NodeList[node.nodeId], j, i]
+            req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
             res = ReplicateLogs(req1)
     else:
         # Send to leader via FIFO link? No idea
@@ -155,19 +175,19 @@ def SuspectFail():
 class RaftServicer(raft_pb2_grpc.RaftServicer):
 
     def AppendEntries(self, request, context):
-        
-        if(request.suffix.length() > 0 and node.log.length() > request.prefixLen):
-            index = min(node.log.length(),request.prefixLen+request.suffix.length())-1
-            if(node.log[index].term != request.suffix[index-request.prefixLen].term):
+
+        if (request.suffix.length() > 0 and node.log.length() > request.prefixLen):
+            index = min(node.log.length(), request.prefixLen + request.suffix.length()) - 1
+            if (node.log[index].term != request.suffix[index - request.prefixLen].term):
                 node.log = node.log[0:request.prefixLen]
 
-        if(request.prefixLen +request.suffix.length() > node.log.length()):
-            for i in range(node.log.length()-request.prefixLen,request.suffix.length()):
+        if (request.prefixLen + request.suffix.length() > node.log.length()):
+            for i in range(node.log.length() - request.prefixLen, request.suffix.length()):
                 node.log.append(request.suffix[i])
-                
-        if(request.leaderCommit > node.commitLength):
-            for i in range(node.commitLength,request.leaderCommit):
-                pass # !TODO send back to application
+
+        if (request.leaderCommit > node.commitLength):
+            for i in range(node.commitLength, request.leaderCommit):
+                pass  # !TODO send back to application
             node.commitLength = request.leaderCommit
         print(request.term)
         # return super().AppendEntries(request, context)
@@ -200,7 +220,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                                         NodeId=node.nodeId)
 
     def ServeClient(self, request, context):
-        request= request.Request.split(" ")
+        request = request.Request.split(" ")
         # request = request.Request.split(" ")
         operation = request[0]
         data = ""
@@ -235,9 +255,9 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 request.prefixLen == 0 and node.log[request.prefixLen - 1].term == request.prefixTerm)
         if node.currentTerm == request.currentTerm and ok:
             # Append Entries
-            
+
             ack = request.prefixLen + len(request.suffix)
-            with grpc.insecure_channel(NodeList[node.currentLeader]) as channel:
+            with grpc.insecure_channel(open_nodes[node.currentLeader]) as channel:
                 stub = raft_pb2_grpc.RaftStub(channel)
                 req = raft_pb2.ReplicateLogResponseArgs(followerId=node.nodeId, followerTerm=node.currentTerm, ack=ack,
                                                         success=True)
@@ -246,12 +266,12 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
             # Send Ack to leader of success
         else:
             # Send Ack to leader of failure
-            with grpc.insecure_channel(NodeList[node.leaderId]) as channel:
+            with grpc.insecure_channel(open_nodes[node.leaderId]) as channel:
                 stub = raft_pb2_grpc.RaftStub(channel)
                 req = raft_pb2.ReplicateLogResponseArgs(node.nodeId, node.currentTerm, 0, False)
                 res = stub.ReplicateLogResponse(req)
-        return raft_pb2.ReplicateLogRequestRes(nodeId=node.nodeId,currentTerm=node.currentTerm,ackLen=0,receivedMessage=True)
-
+        return raft_pb2.ReplicateLogRequestRes(nodeId=node.nodeId, currentTerm=node.currentTerm, ackLen=0,
+                                               receivedMessage=True)
 
     def ReplicateLogResponse(self, request, context):
         if node.currentTerm == request.followerTerm and node.currentRole == "Leader":
@@ -272,7 +292,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         return raft_pb2.ReplicateLogResponseRes()
 
     def CommitEntries(self, request, context):
-        minacks = (len(NodeList) + 1) / 2
+        minacks = (len(open_nodes) + 1) / 2
         ready = []
         # TODO: Didnt get this
         for i in range(1, len(node.log)):
@@ -285,18 +305,23 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
 
 def serve():
-    global node
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
-    raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
-    server.add_insecure_port(f"[::]:{port}")
-    server.start()
+    global node
     n = -1
     addr = ip + ":" + port
     for k, v in NodeList.items():
         if v == addr:
             n = k
     print(n, addr)
+    f=open("nodes.txt","a")
+    f.write(ip + ":" + port + " " + str(n) + "\n")
+    f.close()
+    time.sleep(10)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
+    raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
+    server.add_insecure_port(f"[::]:{port}")
+    server.start()
+
     try:
 
         if (os.path.isdir(f"logs_node_{n}")):
@@ -314,7 +339,7 @@ def serve():
             path = os.getcwd() + f"/logs_node_{n}/"
             f = open(path + f"logs.txt", "a+")
             f1 = open(path + "metadata.txt", "a+")
-            f2 = open(path + "dump.txt", "a+")
+            f2 = open(path + "dump.txt", "w+")
 
         node.startTimer()
         print(node.timer)
@@ -348,8 +373,12 @@ if __name__ == '__main__':
 
     th1 = threading.Thread(target=serve)
     th2 = threading.Thread(target=timeout)
+    th3 = threading.Thread(target=NodeDetector)
+
     t.append(th1)
     t.append(th2)
+    t.append(th3)
+
     try:
         for i in t:
             i.start()

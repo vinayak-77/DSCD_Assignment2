@@ -2,7 +2,7 @@ import logEntry
 import time
 import random
 from logEntry import logEntry
-NodeList = {1:'127.0.0.1:50051',2:'127.0.0.1:50052'}
+NodeList = {1:'127.0.0.1:50051',2:'127.0.0.1:50052',3:'127.0.0.1:50053',4:'127.0.0.1:50054'}
 
 
 
