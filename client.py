@@ -14,17 +14,7 @@ def run():
             req = input("Enter Request: ")
             print(req.split())
             res = stub.ServeClient(raft_pb2.ServeClientArgs(Request=req))
-            if(not res.Success):
-                with open("nodes.txt","r") as f:
-                    nodes = f.readlines()
-                    for node in nodes:
-                        
-                        if(len(node.split()) >= 2 and node.split()[1] == str(res.LeaderID)):
-                            leader_addr = node.split()[0]
-                            print(leader_addr)
-                            print("Here")
             print(res)
-
 
 if __name__ == "__main__":
     run()

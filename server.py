@@ -220,24 +220,29 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
     def ServeClient(self, request, context):
         print(node.nodeId,node.currentLeader)
-        request = request.Request.split(" ")
+        req = request.Request.split(" ")
         # request = request.Request.split(" ")
-        operation = request[0]
+        operation = req[0]
         print(operation)
         data = ""
         # # ! Pass the message to leader
         # # TODO
         if (node.nodeId != node.currentLeader):
             print("Not leader ....")
-            return raft_pb2.ServeClientReply(Data=data, LeaderID=str(node.currentLeader), Success=False)
+            with grpc.insecure_channel(open_nodes[node.currentLeader]) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                print(request)
+                res = stub.ServeClient(request)
+                print(res)
+                return res
         if (operation == "SET"):
-            key = request[1]
-            value = request[2]
+            key = req[1]
+            value = req[2]
             node.data[key] = value
             print(node.data)
         elif (operation == "GET"):
             print("Get req")
-            key = request[1]
+            key = req[1]
             data = str(node.data[key])
             print(node.data[key])
         else:
