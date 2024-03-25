@@ -27,6 +27,8 @@ class Node:
   timer = 0
   val=False
   data = {}
+  leaseDuration = 7
+  leaseStartTime = 0
   
   def __init__(self,nodeId,ip,port):
     self.nodeId = nodeId
@@ -62,3 +64,9 @@ class Node:
     #
     # if(len(self.log) > 0):
     #   self.lastTerm = self.log[len(self.log)-1].term
+    
+  def acquireLease(self):
+    self.leaseStartTime = time.time
+  
+  def checkLeaseExpiry(self):
+    return time.time >= self.leaseStartTime+self.leaseDuration # True Meams expired
