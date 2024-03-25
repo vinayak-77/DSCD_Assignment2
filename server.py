@@ -22,7 +22,16 @@ node: Node = Node(nodeId=nodeId, ip=ip, port=port)
 
 open_nodes = {}
 
-
+def sendHeartbeat():
+    if(node.isLeader):
+        for j, i in open_nodes.items():
+            if i == node.ipAddr + ":" + node.port:
+                continue
+            with grpc.insecure_channel(i) as channel:
+                stub = raft_pb2_grpc.RaftStub(channel)
+                req = raft_pb2.AppendEntriesArgs(term=node.lastTerm,leaderId=node.leaderId,prevLogIndex=node.lastIndex,prevLogTerm=node.lastTerm,suffix=[],leaderCommit=node.commitLength,leaseInterval=node.leaseInterval,prefixLen=0)
+                res = stub.AppendEntries(req)
+                
 
 def NodeDetector():
     time.sleep(4)
@@ -383,6 +392,7 @@ if __name__ == '__main__':
     th1 = threading.Thread(target=serve)
     th2 = threading.Thread(target=timeout)
     th3 = threading.Thread(target=NodeDetector)
+    th4 = threading.Thread(target=sendHeartbeat)
 
     t.append(th1)
     t.append(th2)
