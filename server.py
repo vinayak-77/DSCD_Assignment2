@@ -72,6 +72,7 @@ def noOp():
 
 
 def ReplicateLogs(req):
+    node.acquireLease()
     prefix = node.sentLength[req[2]]
     suffix = node.log[prefix:]
     prefixTerm = 0
@@ -106,6 +107,8 @@ def timeout():
 
 
 def StartElection():
+    longestLease = 0
+    leaseStart = 0
     node.startTimer()
     votes = 0
     for j, i in open_nodes.items():
@@ -117,10 +120,18 @@ def StartElection():
                                                 lastLogIndex=node.lastIndex)
             response = stub.RequestVote(request)
 
+            if(response.longestDurationRem > longestLease):
+                longestLease = response.longestDurationRem
+                leaseStart = time.time
+            
             if (response.voteGranted == True and node.currentRole == "Candidate" and node.currentTerm == response.term):
                 node.votesReceived.append(response.NodeId)
 
     if (len(node.votesReceived) >= len(open_nodes) / 2):
+        
+        while(time.time <leaseStart+longestLease):
+            time.sleep(0.5)
+        node.acquireLease()
         print(node.votesReceived)
         print("Leader")
         node.currentRole = "Leader"
@@ -223,8 +234,11 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
         else:
 
             vote = False
-
-        return raft_pb2.RequestVotesRes(term=node.currentTerm, voteGranted=vote, longestDurationRem=0,
+        longestLease = 0
+        if(node.leaseStartTime > 0):
+            longestLease = time.time-node.leaseStartTime
+        
+        return raft_pb2.RequestVotesRes(term=node.currentTerm, voteGranted=vote, longestDurationRem=longestLease,
                                         NodeId=node.nodeId)
 
     def ServeClient(self, request, context):
