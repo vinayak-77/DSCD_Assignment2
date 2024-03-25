@@ -273,7 +273,8 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 request.prefixLen == 0 and node.log[request.prefixLen - 1].term == request.prefixTerm)
         if node.currentTerm == request.currentTerm and ok:
             # Append Entries
-
+            req=raft_pb2.AppendEntriesArgs(term = node.currentTerm,leaderId=node.currentLeader,prevLogIndex=node.lastIndex,prevLogTerm=node.lastTerm,suffix=request.suffix,leaderCommit=request.commitLength,leaseInterval=0,prefixLen=request.prefixLen)
+            res = self.AppendEntries(req,context)
             ack = request.prefixLen + len(request.suffix)
             with grpc.insecure_channel(open_nodes[node.currentLeader]) as channel:
                 stub = raft_pb2_grpc.RaftStub(channel)
