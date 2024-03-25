@@ -22,16 +22,7 @@ node: Node = Node(nodeId=nodeId, ip=ip, port=port)
 
 open_nodes = {}
 
-def sendHeartbeat():
-    if(node.isLeader):
-        for j, i in open_nodes.items():
-            if i == node.ipAddr + ":" + node.port:
-                continue
-            with grpc.insecure_channel(i) as channel:
-                stub = raft_pb2_grpc.RaftStub(channel)
-                req = raft_pb2.AppendEntriesArgs(term=node.lastTerm,leaderId=node.leaderId,prevLogIndex=node.lastIndex,prevLogTerm=node.lastTerm,suffix=[],leaderCommit=node.commitLength,leaseInterval=node.leaseInterval,prefixLen=0)
-                res = stub.AppendEntries(req)
-                
+
 
 def NodeDetector():
     time.sleep(4)
@@ -96,6 +87,15 @@ def ReplicateLogs(req):
                                                commitLength=node.commitLength, suffix=suffix)
         res = stub.ReplicateLogRequest(req)
         print(res)
+
+
+def sendHeartbeat():
+    if node.isLeader:
+        for j, i in open_nodes.items():
+            if i == node.ipAddr + ":" + node.port:
+                continue
+            req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
+            ReplicateLogs(req1)
 
 
 def timeout():
@@ -397,6 +397,7 @@ if __name__ == '__main__':
     t.append(th1)
     t.append(th2)
     t.append(th3)
+    t.append(th4)
 
     try:
         for i in t:
