@@ -75,6 +75,8 @@ def ReplicateLogs(req):
     node.acquireLease()
     prefix = node.sentLength[req[2]]
     suffix = node.log[prefix:]
+    for i in range(len(suffix)):
+        suffix[i] = raft_pb2.entry(index=suffix[i].index,term = suffix[i].term,key = suffix[i].key,val = suffix[i].value)
     prefixTerm = 0
     if prefix > 0:
         prefixTerm = node.log[prefix - 1].term
@@ -83,10 +85,10 @@ def ReplicateLogs(req):
 
     with grpc.insecure_channel(req[3]) as channel:
         stub = raft_pb2_grpc.RaftStub(channel)
-        req = raft_pb2.ReplicateLogRequestArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
+        request = raft_pb2.ReplicateLogRequestArgs(leaderId=node.nodeId, currentTerm=node.currentTerm,
                                                prefixLen=prefix, prefixTerm=prefixTerm,
                                                commitLength=node.commitLength, suffix=suffix)
-        res = stub.ReplicateLogRequest(req)
+        res = stub.ReplicateLogRequest(request)
         print(res)
 
 
@@ -128,7 +130,7 @@ def StartElection():
 
             if response.longestDurationRem > longestLease:
                 longestLease = response.longestDurationRem
-                leaseStart = time.time
+                leaseStart = time.time()
 
             if response.voteGranted == True and node.currentRole == "Candidate" and node.currentTerm == response.term:
                 node.votesReceived.append(response.NodeId)
@@ -144,18 +146,20 @@ def StartElection():
         node.currentLeader = node.nodeId
         node.isLeader=True
         node.leaderId = node.nodeId
+        entry = LogEntry(node.lastTerm, node.lastIndex + 1, "NO-OP", "")
+        node.log.append(entry)
         # TODO: Need to think how to get the ip address of followers: One way is to assume every node sent it. which is done below
         for j, i in open_nodes.items():
             if i == Node.ipAddr + Node.port:
                 continue
 
             # Replicating logs
-            entry = LogEntry(node.lastTerm, node.lastIndex + 1, "NO-OP", "")
-            node.log.append(entry)
-            node.sentLength[j] = len(node.log)
+            
+            node.sentLength[j] = 0
             node.ackedLength[j] = 0
             req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
-            print(req1)
+            # print(req1)
+            # SendBroadcast(entry)
             ReplicateLogs(req1)
 
     else:
@@ -176,7 +180,7 @@ def SendBroadcast(msg):
                 # Replicating logs
 
             queryNode = open_nodes[j]  # ! Replace i with node id
-            prefixLen = queryNode.sentLength
+            prefixLen = node.sentLength[queryNode]
             suffix = []
             for entryInd in range(prefixLen, len(node.log)):
                 logEntry = node.log[entryInd]
@@ -202,7 +206,7 @@ def SuspectFail():
 class RaftServicer(raft_pb2_grpc.RaftServicer):
 
     def AppendEntries(self, request, context):
-
+        print(node.log)
         if len(request.suffix) > 0 and len(node.log) > request.prefixLen:
             index = min(len(node.log), request.prefixLen + len(request.suffix)) - 1
             if node.log[index].term != request.suffix[index - request.prefixLen].term:
@@ -270,8 +274,9 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 writer.write(f"SET {key} {value} {node.currentTerm}")
                 print(node.data)
                 entry = LogEntry(node.lastTerm, node.lastIndex + 1, key, value)
-                # node.log.append(entry)
-                SendBroadcast(entry)
+                node.log.append(entry)
+                # SendBroadcast(entry)
+                # ReplicateLogs()
             elif operation == "GET":
                 print("Get req")
                 key = req[1]
@@ -284,8 +289,19 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
                 data = noOp()
                 entry = LogEntry(node.lastTerm, node.lastIndex + 1, "NO-OP", "")
-                # node.log.append(entry)
-                SendBroadcast(entry)
+                node.log.append(entry)
+                # SendBroadcast(entry)
+            for j, i in open_nodes.items():
+                if i == Node.ipAddr + Node.port:
+                    continue
+
+                # Replicating logs
+                
+                
+                req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
+                # print(req1)
+                # SendBroadcast(entry)
+                ReplicateLogs(req1)
 
         return raft_pb2.ServeClientReply(Data=str(data), LeaderID=str(node.currentLeader), Success=True)
         # print(request.request)
@@ -371,9 +387,9 @@ def serve():
     for k, v in NodeList.items():
         if v == addr:
             n = k
-    print(n, addr)
+    print(nodeId, addr)
     f = open("nodes.txt", "a")
-    f.write(ip + ":" + port + " " + str(n) + " " + "\n")
+    f.write(ip + ":" + port + " " + str(nodeId) + " " + "\n")
     f.close()
     time.sleep(10)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
