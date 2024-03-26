@@ -5,6 +5,18 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class LeaseReq(_message.Message):
+    __slots__ = ("ack",)
+    ACK_FIELD_NUMBER: _ClassVar[int]
+    ack: int
+    def __init__(self, ack: _Optional[int] = ...) -> None: ...
+
+class LeaseRes(_message.Message):
+    __slots__ = ("ack",)
+    ACK_FIELD_NUMBER: _ClassVar[int]
+    ack: int
+    def __init__(self, ack: _Optional[int] = ...) -> None: ...
+
 class msg(_message.Message):
     __slots__ = ("msg",)
     MSG_FIELD_NUMBER: _ClassVar[int]

@@ -8,7 +8,16 @@ service Raft{
   rpc ReplicateLogRequest(ReplicateLogRequestArgs) returns (ReplicateLogRequestRes) {};
   rpc ReplicateLogResponse(ReplicateLogResponseArgs) returns (ReplicateLogResponseRes) {};
   rpc CommitEntries(CommitArgs) returns (CommitRes) {};
+  rpc RefreshLease (LeaseReq) returns (LeaseRes) {}
 
+}
+
+message LeaseReq{
+  int32 ack=1;
+
+}
+message LeaseRes{
+  int32 ack=2;
 }
 
 message msg{

@@ -1,4 +1,4 @@
-class logEntry:
+class LogEntry:
   
   term = 0
   index = 0
