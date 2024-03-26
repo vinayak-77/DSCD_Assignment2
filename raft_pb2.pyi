@@ -42,7 +42,7 @@ class entry(_message.Message):
     def __init__(self, index: _Optional[int] = ..., term: _Optional[int] = ..., key: _Optional[str] = ..., val: _Optional[str] = ...) -> None: ...
 
 class AppendEntriesArgs(_message.Message):
-    __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "suffix", "leaderCommit", "leaseInterval", "prefixLen")
+    __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "suffix", "leaderCommit", "leaseInterval", "prefixLen", "heartBeat")
     TERM_FIELD_NUMBER: _ClassVar[int]
     LEADERID_FIELD_NUMBER: _ClassVar[int]
     PREVLOGINDEX_FIELD_NUMBER: _ClassVar[int]
@@ -51,6 +51,7 @@ class AppendEntriesArgs(_message.Message):
     LEADERCOMMIT_FIELD_NUMBER: _ClassVar[int]
     LEASEINTERVAL_FIELD_NUMBER: _ClassVar[int]
     PREFIXLEN_FIELD_NUMBER: _ClassVar[int]
+    HEARTBEAT_FIELD_NUMBER: _ClassVar[int]
     term: int
     leaderId: int
     prevLogIndex: int
@@ -59,7 +60,8 @@ class AppendEntriesArgs(_message.Message):
     leaderCommit: int
     leaseInterval: float
     prefixLen: int
-    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[float] = ..., prefixLen: _Optional[int] = ...) -> None: ...
+    heartBeat: bool
+    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[float] = ..., prefixLen: _Optional[int] = ..., heartBeat: bool = ...) -> None: ...
 
 class AppendEntriesRes(_message.Message):
     __slots__ = ("term", "success")
@@ -110,20 +112,22 @@ class ServeClientReply(_message.Message):
     def __init__(self, Data: _Optional[str] = ..., LeaderID: _Optional[str] = ..., Success: bool = ...) -> None: ...
 
 class ReplicateLogRequestArgs(_message.Message):
-    __slots__ = ("leaderId", "currentTerm", "prefixLen", "prefixTerm", "commitLength", "suffix")
+    __slots__ = ("leaderId", "currentTerm", "prefixLen", "prefixTerm", "commitLength", "suffix", "heartBeat")
     LEADERID_FIELD_NUMBER: _ClassVar[int]
     CURRENTTERM_FIELD_NUMBER: _ClassVar[int]
     PREFIXLEN_FIELD_NUMBER: _ClassVar[int]
     PREFIXTERM_FIELD_NUMBER: _ClassVar[int]
     COMMITLENGTH_FIELD_NUMBER: _ClassVar[int]
     SUFFIX_FIELD_NUMBER: _ClassVar[int]
+    HEARTBEAT_FIELD_NUMBER: _ClassVar[int]
     leaderId: int
     currentTerm: int
     prefixLen: int
     prefixTerm: int
     commitLength: int
     suffix: _containers.RepeatedCompositeFieldContainer[entry]
-    def __init__(self, leaderId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., prefixLen: _Optional[int] = ..., prefixTerm: _Optional[int] = ..., commitLength: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ...) -> None: ...
+    heartBeat: bool
+    def __init__(self, leaderId: _Optional[int] = ..., currentTerm: _Optional[int] = ..., prefixLen: _Optional[int] = ..., prefixTerm: _Optional[int] = ..., commitLength: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., heartBeat: bool = ...) -> None: ...
 
 class ReplicateLogRequestRes(_message.Message):
     __slots__ = ("nodeId", "currentTerm", "ackLen", "receivedMessage")
