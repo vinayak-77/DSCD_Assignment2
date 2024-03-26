@@ -13,7 +13,7 @@ class Node:
   port = ""
   currentTerm = 0
   votedFor = None
-  log : [logEntry]
+  log : []
   commitLength = 0
   currentRole = "Follower"
   currentLeader = None

@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from concurrent import futures
+import logEntry
 
 import grpc
 
@@ -143,7 +144,8 @@ def StartElection():
                 continue
 
             # Replicating logs
-
+            entry = logEntry(node.lastTerm,node.lastIndex+1,"NO-OP","")
+            node.log.append(entry)
             node.sentLength[j] = len(node.log)
             node.ackedLength[j] = 0
             req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
@@ -261,14 +263,24 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 writer = open(f"logs_node_{node.nodeId}/logs.txt","a")
                 writer.write(f"SET {key} {value} {node.currentTerm}")
                 print(node.data)
+                entry = logEntry(node.lastTerm,node.lastIndex+1,key,value)
+                # node.log.append(entry)
+                SendBroadcast(entry)
             elif (operation == "GET"):
                 print("Get req")
                 key = req[1]
-                data = str(node.data[key])
-                print(node.data[key])
+                for entry in node.log:
+                    if(entry.key == key):
+                        data = entry.value
+                # data = str(node.data[key])
+                # print(node.data[key])
             else:
 
                 data = noOp()
+                entry = logEntry(node.lastTerm,node.lastIndex+1,"NO-OP","")
+                # node.log.append(entry)
+                SendBroadcast(entry)
+        
         return raft_pb2.ServeClientReply(Data=str(data), LeaderID=str(node.currentLeader), Success=True)
         # print(request.request)
         # return super().ServeClient(request, context)
