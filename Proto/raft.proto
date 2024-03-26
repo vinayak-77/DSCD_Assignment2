@@ -43,6 +43,7 @@ message AppendEntriesArgs{
   int32 leaderCommit = 6;
   float leaseInterval = 7;
   int32 prefixLen = 8;
+  bool heartBeat = 9;
 }
 
 message AppendEntriesRes{
@@ -83,6 +84,7 @@ message ReplicateLogRequestArgs {
   int32 prefixTerm = 4;
   int32 commitLength = 5;
   repeated entry suffix = 6;
+  bool heartBeat = 7;
 }
 
 message ReplicateLogRequestRes {
