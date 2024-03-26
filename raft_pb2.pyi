@@ -37,9 +37,9 @@ class entry(_message.Message):
     VAL_FIELD_NUMBER: _ClassVar[int]
     index: int
     term: int
-    key: int
-    val: int
-    def __init__(self, index: _Optional[int] = ..., term: _Optional[int] = ..., key: _Optional[int] = ..., val: _Optional[int] = ...) -> None: ...
+    key: str
+    val: str
+    def __init__(self, index: _Optional[int] = ..., term: _Optional[int] = ..., key: _Optional[str] = ..., val: _Optional[str] = ...) -> None: ...
 
 class AppendEntriesArgs(_message.Message):
     __slots__ = ("term", "leaderId", "prevLogIndex", "prevLogTerm", "suffix", "leaderCommit", "leaseInterval", "prefixLen")
@@ -57,9 +57,9 @@ class AppendEntriesArgs(_message.Message):
     prevLogTerm: int
     suffix: _containers.RepeatedCompositeFieldContainer[entry]
     leaderCommit: int
-    leaseInterval: int
+    leaseInterval: float
     prefixLen: int
-    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[int] = ..., prefixLen: _Optional[int] = ...) -> None: ...
+    def __init__(self, term: _Optional[int] = ..., leaderId: _Optional[int] = ..., prevLogIndex: _Optional[int] = ..., prevLogTerm: _Optional[int] = ..., suffix: _Optional[_Iterable[_Union[entry, _Mapping]]] = ..., leaderCommit: _Optional[int] = ..., leaseInterval: _Optional[float] = ..., prefixLen: _Optional[int] = ...) -> None: ...
 
 class AppendEntriesRes(_message.Message):
     __slots__ = ("term", "success")
@@ -89,9 +89,9 @@ class RequestVotesRes(_message.Message):
     NODEID_FIELD_NUMBER: _ClassVar[int]
     term: int
     voteGranted: bool
-    longestDurationRem: int
+    longestDurationRem: float
     NodeId: int
-    def __init__(self, term: _Optional[int] = ..., voteGranted: bool = ..., longestDurationRem: _Optional[int] = ..., NodeId: _Optional[int] = ...) -> None: ...
+    def __init__(self, term: _Optional[int] = ..., voteGranted: bool = ..., longestDurationRem: _Optional[float] = ..., NodeId: _Optional[int] = ...) -> None: ...
 
 class ServeClientArgs(_message.Message):
     __slots__ = ("Request",)
