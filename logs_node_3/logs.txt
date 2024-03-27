@@ -1,1 +1,2 @@
-SET 1 1 1SET K 8 1
+SET R 4 1 
+SET E 3 1 

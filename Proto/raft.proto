@@ -29,7 +29,7 @@ message ack{
 }
 message entry{
   int32 index = 1;
-  int32 term = 2;
+  optional int32 term = 2;
   string key = 3;
   string val = 4;
 }

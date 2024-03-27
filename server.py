@@ -19,7 +19,7 @@ ip = socket.gethostbyname(socket.gethostname())
 
 leader = False
 
-node: Node = Node(nodeId=nodeId, ip=ip, port=port)
+node: Node = Node(nodeId=int(nodeId), ip=ip, port=port)
 
 open_nodes = {}
 all_ip = {'127.0.0.1:50051':1,'127.0.0.1:50052':2,'127.0.0.1:50053':3}
@@ -89,7 +89,9 @@ def ReplicateLogs(req,heartbeat):
     suffix = node.log[prefix:]
     for i in range(len(suffix)):
         entry = suffix[i]
+
         suffix[i] = raft_pb2.entry(index=entry.index,term = entry.term,key =entry.key,val = entry.value)
+
     prefixTerm = 0
     if prefix > 0:
         prefixTerm = node.log[prefix - 1].term
@@ -244,6 +246,9 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 pass  # !TODO send back to application
             node.commitLength = request.leaderCommit
         print(node.log)
+
+        node.writelog()
+
         # return super().AppendEntries(request, context)
 
     def RequestVote(self, request, context):
@@ -294,7 +299,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 value = req[2]
                 node.data[key] = value
                 writer = open(f"logs_node_{node.nodeId}/logs.txt", "a")
-                writer.write(f"SET {key} {value} {node.currentTerm}")
+                writer.write(f"SET {key} {value} {node.currentTerm} \n")
                 print(node.data)
                 entry = LogEntry(node.lastTerm, node.lastIndex + 1, key, value)
                 node.log.append(entry)
@@ -423,22 +428,7 @@ def serve():
 
         try:
 
-            if os.path.isdir(f"logs_node_{n}"):
-                # take data from log files
-                path = os.getcwd() + f"/logs_node_{n}/"
-                f = open(path + f"logs.txt", "a+")
-                f1 = open(path + "metadata.txt", "a+")
-                f2 = open(path + "dump.txt", "a+")
-                # For now
-                node = Node(nodeId=n, ip=ip, port=port)
 
-            else:
-                node = Node(nodeId=n, ip=ip, port=port)
-                os.mkdir(f"logs_node_{n}", 0o777)
-                path = os.getcwd() + f"/logs_node_{n}/"
-                f = open(path + f"logs.txt", "a+")
-                f1 = open(path + "metadata.txt", "a+")
-                f2 = open(path + "dump.txt", "w+")
 
             node.startTimer()
             print(node.timer)

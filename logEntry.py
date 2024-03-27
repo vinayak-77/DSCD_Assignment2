@@ -10,6 +10,8 @@ class LogEntry:
     self.index = index
     self.key = key
     self.value = value
+
+
   
   
     

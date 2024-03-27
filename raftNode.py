@@ -1,6 +1,8 @@
-
+import os
 import time
 import random
+
+from logEntry import LogEntry
 
 NodeList = {1: '127.0.0.1:50051', 2: '127.0.0.1:50052', 3: '127.0.0.1:50053', 4: '127.0.0.1:50054'}
 
@@ -12,7 +14,7 @@ class Node:
     port = ""
     currentTerm = 0
     votedFor = None
-    log =  []
+    log :  [LogEntry]
     commitLength = 0
     currentRole = "Follower"
     currentLeader = None
@@ -34,7 +36,26 @@ class Node:
         self.ipAddr = ip
         self.port = port
         self.timer = random.uniform(5, 11)
-        self.log = []
+        self.log = [LogEntry(1,1,1,1)]
+
+
+
+
+        if os.path.isdir(f"logs_node_{nodeId}"):
+            # take data from log files
+            path = os.getcwd() + f"/logs_node_{nodeId}/"
+            self.f = open(path + f"logs.txt", "a+")
+            self.f1 = open(path + "metadata.txt", "a+")
+            self.f2 = open(path + "dump.txt", "a+")
+            # For now
+
+
+        else:
+            os.mkdir(f"logs_node_{nodeId}", 0o777)
+            path = os.getcwd() + f"/logs_node_{nodeId}/"
+            self.f = open(path + f"logs.txt", "a+")
+            self.f1 = open(path + "metadata.txt", "a+")
+            self.f2 = open(path + "dump.txt", "w+")
 
     def onCrashRecovery(self):
         self.currentRole = "Follower"
@@ -76,3 +97,18 @@ class Node:
     def checkLeaseExpiry(self):
 
         return time.time() >= self.leaseStartTime + self.leaseDuration  # True Means expired
+
+    def writelog(self):
+
+        for i in self.log:
+
+            if i.key=="NO-OP":
+                print(i.key)
+                # self.f.write("NO-OP"+"\n")
+            else:
+                print(i.key)
+                # self.f.write(f"{i.key} {i.value} {i.term}")
+
+
+
+
