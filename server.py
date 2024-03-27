@@ -22,22 +22,33 @@ leader = False
 node: Node = Node(nodeId=nodeId, ip=ip, port=port)
 
 open_nodes = {}
-
+all_ip = {'127.0.0.1:50051':1,'127.0.0.1:50052':2,'127.0.0.1:50053':3}
 
 def NodeDetector():
-    time.sleep(4)
+    try:
+        time.sleep(4)
 
-    while True:
-        f = open("nodes.txt", "r")
-        nodes = f.read().split("\n")
-        f.close()
-        for i in nodes:
-            k = i.split(" ")
-            if k == ['']:
-                continue
-            if int(k[1]) not in open_nodes:
-                open_nodes[int(k[1])] = k[0]
-                print(open_nodes)
+        while True:
+            ip_exist = []
+            f = open("nodes.txt", "r")
+            nodes = f.read().split("\n")
+            f.close()
+            for i in nodes:
+                k = i.split(" ")
+                ip_exist.append(k[0])
+                if k == ['']:
+                    continue
+                if int(k[1]) not in open_nodes:
+                    open_nodes[int(k[1])] = k[0]
+                    print(open_nodes)
+            for k,v in all_ip.items():
+                if k not in ip_exist and v in open_nodes.keys():
+                    del open_nodes[v]
+
+    except KeyboardInterrupt:
+        return
+
+
 
 
 def setValue(key, value):
@@ -95,29 +106,34 @@ def ReplicateLogs(req,heartbeat):
 
 
 def sendHeartbeat():
+    try:
+        while True:
 
-    while True:
-        time.sleep(1)
-        if node.isLeader:
+            time.sleep(1)
+            if node.isLeader:
 
-            for j, i in open_nodes.items():
-                if i == node.ipAddr + ":" + node.port:
-                    continue
-                req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
-                # print(req1)
-                # SendBroadcast(entry)
-                ReplicateLogs(req1,True)
-                # with grpc.insecure_channel(i) as channel:
-                #     stub = raft_pb2_grpc.RaftStub(channel)
-                #     res = stub.RefreshLease(raft_pb2.LeaseReq(ack=1))
-                #     channel.close()
+                for j, i in open_nodes.items():
+                    if i == node.ipAddr + ":" + node.port:
+                        continue
+                    req1 = [node.nodeId, open_nodes[node.nodeId], j, i]
+                    # print(req1)
+                    # SendBroadcast(entry)
+                    ReplicateLogs(req1,True)
+                    # with grpc.insecure_channel(i) as channel:
+                    #     stub = raft_pb2_grpc.RaftStub(channel)
+                    #     res = stub.RefreshLease(raft_pb2.LeaseReq(ack=1))
+                    #     channel.close()
+    except KeyboardInterrupt:
+        return
+
 
 
 def timeout():
     time_rand = time.time() + random.uniform(1, 2)
     while True:
-        if time.time() >= time_rand:
-            return True
+
+            if time.time() >= time_rand:
+                return True
 
 
 def StartElection():
@@ -388,66 +404,71 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
 
 def serve():
-    global node
-    n = -1
-    addr = ip + ":" + port
-    for k, v in NodeList.items():
-        if v == addr:
-            n = k
-    print(nodeId, addr)
-    f = open("nodes.txt", "a")
-    f.write(ip + ":" + port + " " + str(nodeId) + " " + "\n")
-    f.close()
-    time.sleep(10)
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
-    raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
-    server.add_insecure_port(f"[::]:{port}")
-    server.start()
-
     try:
+        global node
+        n = -1
+        addr = ip + ":" + port
+        for k, v in NodeList.items():
+            if v == addr:
+                n = k
+        print(nodeId, addr)
+        f = open("nodes.txt", "a")
+        f.write(ip + ":" + port + " " + str(nodeId) + " " + "\n")
+        f.close()
+        time.sleep(10)
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
+        raft_pb2_grpc.add_RaftServicer_to_server(RaftServicer(), server)
+        server.add_insecure_port(f"[::]:{port}")
+        server.start()
 
-        if os.path.isdir(f"logs_node_{n}"):
-            # take data from log files
-            path = os.getcwd() + f"/logs_node_{n}/"
-            f = open(path + f"logs.txt", "a+")
-            f1 = open(path + "metadata.txt", "a+")
-            f2 = open(path + "dump.txt", "a+")
-            # For now
-            node = Node(nodeId=n, ip=ip, port=port)
+        try:
 
-        else:
-            node = Node(nodeId=n, ip=ip, port=port)
-            os.mkdir(f"logs_node_{n}", 0o777)
-            path = os.getcwd() + f"/logs_node_{n}/"
-            f = open(path + f"logs.txt", "a+")
-            f1 = open(path + "metadata.txt", "a+")
-            f2 = open(path + "dump.txt", "w+")
+            if os.path.isdir(f"logs_node_{n}"):
+                # take data from log files
+                path = os.getcwd() + f"/logs_node_{n}/"
+                f = open(path + f"logs.txt", "a+")
+                f1 = open(path + "metadata.txt", "a+")
+                f2 = open(path + "dump.txt", "a+")
+                # For now
+                node = Node(nodeId=n, ip=ip, port=port)
 
-        node.startTimer()
-        print(node.timer)
-        if SuspectFail() or node.checkTimeout():
-            print("hi")
-            node.currentTerm += 1
-            node.votedFor = node.nodeId
-            node.votesReceived.append(node.nodeId)
-            node.currentRole = "Candidate"
-            node.lastTerm = 0
+            else:
+                node = Node(nodeId=n, ip=ip, port=port)
+                os.mkdir(f"logs_node_{n}", 0o777)
+                path = os.getcwd() + f"/logs_node_{n}/"
+                f = open(path + f"logs.txt", "a+")
+                f1 = open(path + "metadata.txt", "a+")
+                f2 = open(path + "dump.txt", "w+")
 
-            if len(node.log) > 0:
-                node.lastTerm = node.log[len(node.log) - 1].term
-            if not node.cancel():
-                StartElection()
+            node.startTimer()
+            print(node.timer)
+            if SuspectFail() or node.checkTimeout():
+                print("hi")
+                node.currentTerm += 1
+                node.votedFor = node.nodeId
+                node.votesReceived.append(node.nodeId)
+                node.currentRole = "Candidate"
+                node.lastTerm = 0
+
+                if len(node.log) > 0:
+                    node.lastTerm = node.log[len(node.log) - 1].term
+                if not node.cancel():
+                    StartElection()
 
 
+        except KeyboardInterrupt:
+            pass
+        try:
+            while True:
+                time.sleep(3600)  # One hour
+        except KeyboardInterrupt:
 
-    except FileExistsError:
+            server.stop(0)
+    except KeyboardInterrupt:
         pass
 
-    try:
-        while True:
-            time.sleep(3600)  # One hour
-    except KeyboardInterrupt:
-        server.stop(0)
+
+
 
 
 t = []
@@ -459,7 +480,7 @@ if __name__ == '__main__':
     th4 = threading.Thread(target=sendHeartbeat)
 
     t.append(th1)
-    t.append(th2)
+
     t.append(th3)
     t.append(th4)
 
@@ -469,5 +490,15 @@ if __name__ == '__main__':
         for i in t:
             i.join()
 
-    except:
+    except KeyboardInterrupt:
+
+        node_ip = ip+":"+port
+        node_id = nodeId
+        f= open("nodes.txt", "r")
+        lines = f.readlines()
+        lines = [line for line in lines if line.strip() != f"{node_ip} {node_id}"]
+        f.close()
+        f=open("nodes.txt", "w")
+        f.writelines(lines)
+
         sys.exit(0)
