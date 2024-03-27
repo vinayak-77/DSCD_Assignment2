@@ -239,15 +239,26 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
         if request.prefixLen + len(request.suffix) > len(node.log):
             for i in range(len(node.log) - request.prefixLen, len(request.suffix)):
-                node.log.append(request.suffix[i])
+                re = LogEntry(term=request.suffix[i].term,value=request.suffix[i].val,key=request.suffix[i].key,index=request.suffix[i].index)
+                node.log.append(re)
 
         if request.leaderCommit > node.commitLength:
             for i in range(node.commitLength, request.leaderCommit):
                 pass  # !TODO send back to application
             node.commitLength = request.leaderCommit
         print(node.log)
-
-        node.writelog()
+        path = os.getcwd() + f"/logs_node_{nodeId}/"
+        f = open(path + f"logs.txt", "w")
+        for i in node.log:
+            if i.key == "NO-OP":
+                f.write(i.key + "\n")
+            else:
+                f.write(f"{i.key} {i.value} {i.term} \n")
+            # if i.key=="NO-OP":
+            #     f.write(i.key+"\n")
+            # else:
+            #
+            #     f.write(f"{i.key} {i.val} {i.term} \n")
 
         # return super().AppendEntries(request, context)
 

@@ -14,7 +14,7 @@ class Node:
     port = ""
     currentTerm = 0
     votedFor = None
-    log :  [LogEntry]
+    log = []
     commitLength = 0
     currentRole = "Follower"
     currentLeader = None
@@ -36,7 +36,7 @@ class Node:
         self.ipAddr = ip
         self.port = port
         self.timer = random.uniform(5, 11)
-        self.log = [LogEntry(1,1,1,1)]
+        self.log = []
 
 
 
@@ -99,15 +99,12 @@ class Node:
         return time.time() >= self.leaseStartTime + self.leaseDuration  # True Means expired
 
     def writelog(self):
-
         for i in self.log:
-
             if i.key=="NO-OP":
-                print(i.key)
-                # self.f.write("NO-OP"+"\n")
+                self.f.write(i.key+"\n")
             else:
-                print(i.key)
-                # self.f.write(f"{i.key} {i.value} {i.term}")
+                self.f.write(f"{i.key} {i.value} {i.term} \n")
+
 
 
 
