@@ -309,9 +309,7 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
                 key = req[1]
                 value = req[2]
                 node.data[key] = value
-                writer = open(f"logs_node_{node.nodeId}/logs.txt", "a")
-                writer.write(f"SET {key} {value} {node.currentTerm} \n")
-                print(node.data)
+
                 entry = LogEntry(node.lastTerm, node.lastIndex + 1, key, value)
                 node.log.append(entry)
                 # SendBroadcast(entry)
@@ -348,6 +346,8 @@ class RaftServicer(raft_pb2_grpc.RaftServicer):
 
     def ReplicateLogRequest(self, request, context):
         # if(request.term > )
+        if request.heartbeat:
+            node.renew()
         # TODO implement this functionality
         if request.currentTerm > node.currentTerm:
             node.currentTerm = request.currentTerm
@@ -476,7 +476,7 @@ t = []
 if __name__ == '__main__':
 
     th1 = threading.Thread(target=serve)
-    th2 = threading.Thread(target=timeout)
+    th2 = threading.Thread(target=node.checkTimeout)
     th3 = threading.Thread(target=NodeDetector)
     th4 = threading.Thread(target=sendHeartbeat)
 
